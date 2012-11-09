@@ -5,15 +5,14 @@ socketmaster takes care of starting your app while sharing the
 file-descriptor.
 
 
-
-Q:: How is it different than the Nginx dance ?
-A:: The parent PID never changes so it works better with tools like
+* Q:: How is it different than the Nginx dance ?
+* A:: The parent PID never changes so it works better with tools like
 Upstart
 
-Q:: What happens if I need to change the command to be executed ?
-A:: Use a wrapper script:
+* Q:: What happens if I need to change the command to be executed ?
+* A:: Use a wrapper script:
 
-```
+```bash
 #!/bin/sh
 exec /path/to/your/program
 ```
@@ -22,7 +21,7 @@ Usage
 =====
 
 ```
-socketmaster -listen=tcp://:8080 path/to/wrapper/script
+socketmaster -listen=tcp://:8080 -command=path/to/wrapper/script
 ```
 
 Design
@@ -34,7 +33,7 @@ Design
 On HUP:
  * socketmaster starts a new server
  * waits for X seconds
- * if the new server didn't exit, sent a SIGQUIT to the old server
+ * sends a SIGQUIT to the old server
 
 On SIGINT, TERM, QUIT the signal is propagated to the clients.
 
