@@ -7,15 +7,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 )
 
 var server *http.Server
-var fd uintptr
-var listener net.Listener
-var childCount sync.WaitGroup
 
 type SleepyHandler struct{}
 
@@ -28,10 +24,9 @@ func (*SleepyHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 func init() {
 	sleepyHandler := new(SleepyHandler)
-	connHandler := NewConnectionCountHandler(sleepyHandler, childCount)
 
 	server = &http.Server{
-		Handler: connHandler,
+		Handler: sleepyHandler,
 	}
 }
 
@@ -43,8 +38,10 @@ func main() {
 	// Transform fd into listener
 	listener, err := Listen(addr)
 	if err != nil {
-		log.Fatalln("Unable to open FD", fd, err)
+		log.Fatalln(err)
 	}
+
+	trackerListener := NewTrackingListener(listener)
 
 	log.Println("Starting web server on", addr)
 
@@ -54,15 +51,15 @@ func main() {
 		for {
 			<-c // os.Signal
 			log.Println("Closing listener")
-			listener.Close()
+			trackerListener.Close()
 		}
-	}(c, listener)
+	}(c, trackerListener)
 
-	server.Serve(listener)
+	server.Serve(trackerListener)
 
 	log.Println("Waiting for children to close")
 
-	childCount.Wait()
+	trackerListener.WaitForChildren()
 
 	log.Println("Bye bye")
 }
