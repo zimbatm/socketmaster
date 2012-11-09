@@ -24,21 +24,39 @@ func ListenFile(rawurl string) (file *os.File, err error) {
 		}
 		// NOTE: The name argument doesn't really matter apparently
 		file = os.NewFile(uintptr(fd), fmt.Sprintf("fd://%d", fd))
-	default:
+	case "unix": //, "unixpacket", "unixgram":
+		var laddr *net.UnixAddr
+		var listener *net.UnixListener
+
+		laddr, err = net.ResolveUnixAddr(u.Scheme, u.Path)
+		if err != nil {
+			return
+		}
+
+		listener, err = net.ListenUnix(u.Scheme, laddr)
+		if err != nil {
+			return
+		}
+
+		file, err = listener.File()
+	case "tcp", "tcp4", "tcp6":
 		var laddr *net.TCPAddr
 		var listener *net.TCPListener
+
 		laddr, err = net.ResolveTCPAddr(u.Scheme, u.Host)
 		if err != nil {
 			return
 		}
 
-		listener, err = net.ListenTCP("tcp", laddr)
+		listener, err = net.ListenTCP(u.Scheme, laddr)
 		if err != nil {
 			return
 		}
 
 		// TODO: Is the listener going to close the file when garbage-collected ?
 		file, err = listener.File()
+	default:
+		err = fmt.Errorf("Unsupported scheme: %s", u.Scheme)
 	}
 
 	return

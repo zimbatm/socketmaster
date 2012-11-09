@@ -24,6 +24,8 @@ Usage
 socketmaster -listen=tcp://:8080 -command=path/to/wrapper/script
 ```
 
+listen supports the following socket types: tcp, tcp4, tcp6, unix, fd
+
 Design
 ======
 
