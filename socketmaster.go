@@ -2,79 +2,13 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
-	"socketmaster"
-	"sync"
 	"syscall"
 	"time"
 )
-
-/********* Process handling ********/
-
-type ProcessGroup struct {
-	set map[*os.Process]bool
-	wg  sync.WaitGroup
-
-	commandPath string
-	sockfile    *os.File
-}
-
-func MakeProcessGroup(commandPath string, sockfile *os.File) *ProcessGroup {
-	pg := &ProcessGroup{
-		set: make(map[*os.Process]bool),
-
-		commandPath: commandPath,
-		sockfile:    sockfile,
-	}
-
-	return pg
-}
-
-func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
-	self.wg.Add(1)
-
-	procattr := &os.ProcAttr{
-		Files: []*os.File{os.Stdin, os.Stdout, os.Stderr, self.sockfile},
-	}
-
-	process, err = os.StartProcess(self.commandPath, []string{}, procattr)
-	if err != nil {
-		return
-	}
-
-	// Add to set
-	self.set[process] = true
-
-	go func() {
-		state, err := process.Wait()
-
-		fmt.Println(state, err)
-
-		// Remove from set
-		delete(self.set, process)
-
-		//
-		self.wg.Done()
-	}()
-
-	return
-}
-
-func (self *ProcessGroup) SignalAll(signal os.Signal, except *os.Process) {
-	for process, _ := range self.set {
-		if process != except {
-			process.Signal(signal)
-		}
-	}
-}
-
-func (self *ProcessGroup) WaitAll() {
-	self.wg.Wait()
-}
 
 func handleSignals(processGroup *ProcessGroup, c chan os.Signal, startTime int) {
 	for {
@@ -86,7 +20,7 @@ func handleSignals(processGroup *ProcessGroup, c chan os.Signal, startTime int) 
 			go func() {
 				process, err := processGroup.StartProcess()
 				if err != nil {
-					fmt.Errorf("Could not start new process: %v", err)
+					log.Println("Could not start new process: %v", err)
 				} else {
 					time.Sleep(time.Duration(startTime) * time.Millisecond)
 
@@ -122,7 +56,7 @@ func main() {
 		log.Fatalln("Could not find executable", err)
 	}
 
-	sockfile, err := socketmaster.ListenFile(addr)
+	sockfile, err := ListenFile(addr)
 	if err != nil {
 		log.Fatalln("Unable to open socket", err)
 	}

@@ -3,7 +3,7 @@
  *
  * Useful to gracefully shutdown your webserver.
  */
-package socketmaster
+package main
 
 import (
 	"net/http"

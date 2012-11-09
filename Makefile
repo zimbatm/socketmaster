@@ -1,16 +1,10 @@
-export GOPATH=$(PWD)
+DESTDIR=/usr/local
 
 all: socketmaster
 
-ex: examples
-examples: childserver
+socketmaster: *.go
+	go fmt
+	go build
 
-socketmaster: src/bin/socketmaster/*.go src/socketmaster/*.go
-	go fmt socketmaster
-	go fmt bin/socketmaster
-	go build bin/socketmaster
-
-childserver: examples/childserver.go src/socketmaster/*.go
-	go fmt socketmaster
-	go fmt examples/childserver.go
-	go build examples/childserver.go
+install: socketmaster
+	install -C socketmaster $(DESTDIR)/bin/socketmaster

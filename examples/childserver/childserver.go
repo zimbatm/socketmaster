@@ -1,12 +1,12 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"socketmaster"
 	"sync"
 	"syscall"
 	"time"
@@ -28,7 +28,7 @@ func (*SleepyHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 func init() {
 	sleepyHandler := new(SleepyHandler)
-	connHandler := socketmaster.NewConnectionCountHandler(sleepyHandler, childCount)
+	connHandler := NewConnectionCountHandler(sleepyHandler, childCount)
 
 	server = &http.Server{
 		Handler: connHandler,
@@ -36,13 +36,17 @@ func init() {
 }
 
 func main() {
+	var addr string
+	flag.StringVar(&addr, "listen", "tcp://:8080", "Port to listen to")
+	flag.Parse()
+
 	// Transform fd into listener
-	listener, err := socketmaster.Listen("fd://3")
+	listener, err := Listen(addr)
 	if err != nil {
 		log.Fatalln("Unable to open FD", fd, err)
 	}
 
-	log.Println("Starting web server")
+	log.Println("Starting web server on", addr)
 
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)

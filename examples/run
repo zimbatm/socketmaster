@@ -1,0 +1,8 @@
+#!/bin/sh
+
+cd `dirname $0`
+cd ..
+
+make
+
+./socketmaster -command=./examples/go-wrappper -listen=tcp://:8090
