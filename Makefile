@@ -4,7 +4,7 @@ all: socketmaster
 
 socketmaster: *.go
 	go fmt
-	go build
+	go build -o socketmaster
 
 install: socketmaster
 	install -C socketmaster $(DESTDIR)/bin/socketmaster
