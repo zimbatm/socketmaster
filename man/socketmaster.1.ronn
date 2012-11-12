@@ -69,7 +69,7 @@ SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.
 
 Bug reports and other contributions are welcome !
 The project's source and issue tracker lies on
-https://github.com/pandastream/socketmaster/
+<https://github.com/pandastream/socketmaster/>
 
 ## COPYRIGHT
 
