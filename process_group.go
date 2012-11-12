@@ -28,7 +28,10 @@ func MakeProcessGroup(commandPath string, sockfile *os.File) *ProcessGroup {
 func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	self.wg.Add(1)
 
+	env := append(os.Environ(), "EINHORN_FDS=3")
+
 	procattr := &os.ProcAttr{
+		Env: env,
 		Files: []*os.File{os.Stdin, os.Stdout, os.Stderr, self.sockfile},
 	}
 
