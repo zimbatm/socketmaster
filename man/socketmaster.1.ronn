@@ -40,6 +40,13 @@ On SIGHUP:
  * waits for -start milliseconds
  * sends a SIGHUP to the other child processes
 
+Your server is responsible for:
+
+ * open the socket passed on fd 3
+ * not crashing
+ * gracefully shutdown on SIGHUP (close the listener, wait for the child
+   connections to close)
+
 ## ENVIRONMENT
 
   * `EINHORN_FDS`:
@@ -53,10 +60,16 @@ HUP to the old process.
 
 SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.
 
-## SEE ALSO
+## RELATED PROJECTS
 
   * [einhorn](https://github.com/stripe/einhorn) is a project with the same goals,
     a wider feature-set and written in ruby.
+
+## BUGS & CODE
+
+Bug reports and other contributions are welcome !
+The project's source and issue tracker lies on
+https://github.com/pandastream/socketmaster/
 
 ## COPYRIGHT
 
