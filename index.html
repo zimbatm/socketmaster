@@ -65,7 +65,8 @@
     <a href="#HOW-IT-WORKS">HOW IT WORKS</a>
     <a href="#ENVIRONMENT">ENVIRONMENT</a>
     <a href="#SIGNALS">SIGNALS</a>
-    <a href="#SEE-ALSO">SEE ALSO</a>
+    <a href="#RELATED-PROJECTS">RELATED PROJECTS</a>
+    <a href="#BUGS-CODE">BUGS &amp; CODE</a>
     <a href="#COPYRIGHT">COPYRIGHT</a>
   </div>
 
@@ -123,6 +124,16 @@ If MILLIS is set to zero that feature is disabled.</p></dd>
 </ul>
 
 
+<p>Your server is responsible for:</p>
+
+<ul>
+<li>open the socket passed on fd 3</li>
+<li>not crashing</li>
+<li>gracefully shutdown on SIGHUP (close the listener, wait for the child
+connections to close)</li>
+</ul>
+
+
 <h2 id="ENVIRONMENT">ENVIRONMENT</h2>
 
 <dl>
@@ -138,13 +149,19 @@ HUP to the old process.</p>
 
 <p>SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.</p>
 
-<h2 id="SEE-ALSO">SEE ALSO</h2>
+<h2 id="RELATED-PROJECTS">RELATED PROJECTS</h2>
 
 <ul>
 <li><a href="https://github.com/stripe/einhorn">einhorn</a> is a project with the same goals,
 a wider feature-set and written in ruby.</li>
 </ul>
 
+
+<h2 id="BUGS-CODE">BUGS &amp; CODE</h2>
+
+<p>Bug reports and other contributions are welcome !
+The project's source and issue tracker lies on
+https://github.com/pandastream/socketmaster/</p>
 
 <h2 id="COPYRIGHT">COPYRIGHT</h2>
 
