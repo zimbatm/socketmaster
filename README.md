@@ -41,6 +41,12 @@ On SIGINT, TERM, QUIT the signal is propagated to the clients.
 
 All old servers are responsible to gracefuly shutdown.
 
+Related projects
+================
+
+ * [einhorn](https://github.com/stripe/einhorn): Is much more complete
+ in terms of features and is written in ruby.
+
 TODO
 ====
 
