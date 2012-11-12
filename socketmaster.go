@@ -22,7 +22,9 @@ func handleSignals(processGroup *ProcessGroup, c chan os.Signal, startTime int) 
 				if err != nil {
 					log.Println("Could not start new process: %v", err)
 				} else {
-					time.Sleep(time.Duration(startTime) * time.Millisecond)
+					if startTime > 0 {
+						time.Sleep(time.Duration(startTime) * time.Millisecond)
+					}
 
 					// A possible improvement woud be to only swap the
 					// process if the new child is still alive.
