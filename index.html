@@ -1,1 +1,181 @@
-My Page
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv='content-type' value='text/html;charset=utf8'>
+  <meta name='generator' value='Ronn/v0.7.3 (http://github.com/rtomayko/ronn/tree/0.7.3)'>
+  <title>socketmaster(1) - Zero downtime restart for your apps</title>
+  <style type='text/css' media='all'>
+  /* style: man */
+  body#manpage {margin:0}
+  .mp {max-width:100ex;padding:0 9ex 1ex 4ex}
+  .mp p,.mp pre,.mp ul,.mp ol,.mp dl {margin:0 0 20px 0}
+  .mp h2 {margin:10px 0 0 0}
+  .mp > p,.mp > pre,.mp > ul,.mp > ol,.mp > dl {margin-left:8ex}
+  .mp h3 {margin:0 0 0 4ex}
+  .mp dt {margin:0;clear:left}
+  .mp dt.flush {float:left;width:8ex}
+  .mp dd {margin:0 0 0 9ex}
+  .mp h1,.mp h2,.mp h3,.mp h4 {clear:left}
+  .mp pre {margin-bottom:20px}
+  .mp pre+h2,.mp pre+h3 {margin-top:22px}
+  .mp h2+pre,.mp h3+pre {margin-top:5px}
+  .mp img {display:block;margin:auto}
+  .mp h1.man-title {display:none}
+  .mp,.mp code,.mp pre,.mp tt,.mp kbd,.mp samp,.mp h3,.mp h4 {font-family:monospace;font-size:14px;line-height:1.42857142857143}
+  .mp h2 {font-size:16px;line-height:1.25}
+  .mp h1 {font-size:20px;line-height:2}
+  .mp {text-align:justify;background:#fff}
+  .mp,.mp code,.mp pre,.mp pre code,.mp tt,.mp kbd,.mp samp {color:#131211}
+  .mp h1,.mp h2,.mp h3,.mp h4 {color:#030201}
+  .mp u {text-decoration:underline}
+  .mp code,.mp strong,.mp b {font-weight:bold;color:#131211}
+  .mp em,.mp var {font-style:italic;color:#232221;text-decoration:none}
+  .mp a,.mp a:link,.mp a:hover,.mp a code,.mp a pre,.mp a tt,.mp a kbd,.mp a samp {color:#0000ff}
+  .mp b.man-ref {font-weight:normal;color:#434241}
+  .mp pre {padding:0 4ex}
+  .mp pre code {font-weight:normal;color:#434241}
+  .mp h2+pre,h3+pre {padding-left:0}
+  ol.man-decor,ol.man-decor li {margin:3px 0 10px 0;padding:0;float:left;width:33%;list-style-type:none;text-transform:uppercase;color:#999;letter-spacing:1px}
+  ol.man-decor {width:100%}
+  ol.man-decor li.tl {text-align:left}
+  ol.man-decor li.tc {text-align:center;letter-spacing:4px}
+  ol.man-decor li.tr {text-align:right;float:right}
+  </style>
+  <style type='text/css' media='all'>
+  /* style: toc */
+  .man-navigation {display:block !important;position:fixed;top:0;left:113ex;height:100%;width:100%;padding:48px 0 0 0;border-left:1px solid #dbdbdb;background:#eee}
+  .man-navigation a,.man-navigation a:hover,.man-navigation a:link,.man-navigation a:visited {display:block;margin:0;padding:5px 2px 5px 30px;color:#999;text-decoration:none}
+  .man-navigation a:hover {color:#111;text-decoration:underline}
+  </style>
+</head>
+<!--
+  The following styles are deprecated and will be removed at some point:
+  div#man, div#man ol.man, div#man ol.head, div#man ol.man.
+
+  The .man-page, .man-decor, .man-head, .man-foot, .man-title, and
+  .man-navigation should be used instead.
+-->
+<body id='manpage'>
+  <div class='mp' id='man'>
+
+  <div class='man-navigation' style='display:none'>
+    <a href="#NAME">NAME</a>
+    <a href="#SYNOPSIS">SYNOPSIS</a>
+    <a href="#DESCRIPTION">DESCRIPTION</a>
+    <a href="#HOW-IT-WORKS">HOW IT WORKS</a>
+    <a href="#ENVIRONMENT">ENVIRONMENT</a>
+    <a href="#SIGNALS">SIGNALS</a>
+    <a href="#SEE-ALSO">SEE ALSO</a>
+    <a href="#COPYRIGHT">COPYRIGHT</a>
+  </div>
+
+  <ol class='man-decor man-head man head'>
+    <li class='tl'>socketmaster(1)</li>
+    <li class='tc'></li>
+    <li class='tr'>socketmaster(1)</li>
+  </ol>
+
+  <h2 id="NAME">NAME</h2>
+<p class="man-name">
+  <code>socketmaster</code> - <span class="man-whatis">Zero downtime restart for your apps</span>
+</p>
+
+<h2 id="SYNOPSIS">SYNOPSIS</h2>
+
+<p><code>socketmaster</code> [-listen=URI] [-command=PATH] [-start=MILLIS]</p>
+
+<h2 id="DESCRIPTION">DESCRIPTION</h2>
+
+<p>socketmaster is a generic solution to the restart problem ; you want to restart
+your app but not loose any active connection nor refuse new connections.</p>
+
+<p>socketmaster opens the socket you want to listen on and passes it onto your
+program. Because socketmaster is simple enough is doesn't need to be restarted
+and can keep your file-descriptor indefinitely open.</p>
+
+<dl>
+<dt><code>-listen</code>=URI</dt><dd><p>One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
+Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock</p></dd>
+<dt><code>-command</code>=PATH</dt><dd><p>Defines the location of the program to execute and pass the file-descriptor
+onto. If you need to add arguments to the program use a wrapper script.</p></dd>
+<dt><code>-start</code>=MILLIS</dt><dd><p>Determines how long socketmaster waits before signaling the old process.
+If MILLIS is set to zero that feature is disabled.</p></dd>
+</dl>
+
+
+<h2 id="HOW-IT-WORKS">HOW IT WORKS</h2>
+
+<p>On start:</p>
+
+<ul>
+<li>socketmaster open the -listen port</li>
+<li>socketmaster starts the -command with the socket on fd 3 and EINHORN_FDS=3</li>
+<li>as soon as all child processes are gone, socketmaster stops as well</li>
+</ul>
+
+
+<p>On SIGHUP:</p>
+
+<ul>
+<li>socketmaster starts a new -command</li>
+<li>waits for -start milliseconds</li>
+<li>sends a SIGHUP to the other child processes</li>
+</ul>
+
+
+<h2 id="ENVIRONMENT">ENVIRONMENT</h2>
+
+<dl>
+<dt><code>EINHORN_FDS</code></dt><dd>This variable is set by socketmaster and passed onto the childs. It's
+value is always 3 and meant for einhorn compatiblity.</dd>
+</dl>
+
+
+<h2 id="SIGNALS">SIGNALS</h2>
+
+<p>On SIGHUP, socketmaster starts a new child process, waits for -start and sends a
+HUP to the old process.</p>
+
+<p>SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.</p>
+
+<h2 id="SEE-ALSO">SEE ALSO</h2>
+
+<ul>
+<li><a href="https://github.com/stripe/einhorn">einhorn</a> is a project with the same goals,
+a wider feature-set and written in ruby.</li>
+</ul>
+
+
+<h2 id="COPYRIGHT">COPYRIGHT</h2>
+
+<p>socketmaster is Copyright (C) 2012 PandaStream <a href="http://pandastream.com" data-bare-link="true">http://pandastream.com</a></p>
+
+<p>Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+“Software”), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:</p>
+
+<p>The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.</p>
+
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+
+
+  <ol class='man-decor man-foot man foot'>
+    <li class='tl'>PandaStream</li>
+    <li class='tc'>November 2012</li>
+    <li class='tr'>socketmaster(1)</li>
+  </ol>
+
+  </div>
+</body>
+</html>
