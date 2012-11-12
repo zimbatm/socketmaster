@@ -1,0 +1,83 @@
+socketmaster(1) -- Zero downtime restart for your apps
+======================================================
+
+## SYNOPSIS
+
+`socketmaster` [-listen=URI] [-command=PATH] [-start=MILLIS]
+
+## DESCRIPTION
+
+socketmaster is a generic solution to the restart problem ; you want to restart
+your app but not loose any active connection nor refuse new connections.
+
+socketmaster opens the socket you want to listen on and passes it onto your
+program. Because socketmaster is simple enough is doesn't need to be restarted
+and can keep your file-descriptor indefinitely open.
+
+  * `-listen`=URI:
+    One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
+    Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock
+
+  * `-command`=PATH:
+    Defines the location of the program to execute and pass the file-descriptor
+    onto. If you need to add arguments to the program use a wrapper script.
+
+  * `-start`=MILLIS:
+    Determines how long socketmaster waits before signaling the old process.
+    If MILLIS is set to zero that feature is disabled.
+
+## HOW IT WORKS
+
+On start:
+
+ * socketmaster open the -listen port
+ * socketmaster starts the -command with the socket on fd 3 and EINHORN_FDS=3
+ * as soon as all child processes are gone, socketmaster stops as well
+
+On SIGHUP:
+
+ * socketmaster starts a new -command
+ * waits for -start milliseconds
+ * sends a SIGHUP to the other child processes
+
+## ENVIRONMENT
+
+  * `EINHORN_FDS`:
+    This variable is set by socketmaster and passed onto the childs. It's
+    value is always 3 and meant for einhorn compatiblity.
+
+## SIGNALS
+
+On SIGHUP, socketmaster starts a new child process, waits for -start and sends a
+HUP to the old process.
+
+SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.
+
+## SEE ALSO
+
+  * [einhorn](https://github.com/stripe/einhorn) is a project with the same goals,
+    a wider feature-set and written in ruby.
+
+## COPYRIGHT
+
+socketmaster is Copyright (C) 2012 PandaStream <http://pandastream.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+“Software”), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
