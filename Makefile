@@ -4,7 +4,7 @@ RONN := $(shell which ronn >/dev/null 2>&1 && echo "ronn -w --organization=Panda
 RONNS = $(wildcard man/*.ronn)
 ROFFS = $(RONNS:.ronn=)
 
-.PHONY: all man install
+.PHONY: all man install html gh-pages
 all: socketmaster man
 
 socketmaster: *.go
@@ -15,6 +15,18 @@ socketmaster: *.go
 	$(RONN) -r $<
 
 man: $(ROFFS)
+
+html:
+	$(RONN) -W5 -s toc man/*.ronn
+
+gh-pages: html
+	git stash
+	git checkout gh-pages
+	mv man/socketmaster.1.html index.html
+	git add index.html
+	git commit -m "build"
+	git checkout master
+	git stash pop || true
 
 clean:
 	rm -f socketmaster
