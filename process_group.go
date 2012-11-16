@@ -67,7 +67,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 
 		state, err := process.Wait()
 
-		log.Println(state, err)
+		log.Println(process.Pid, state, err)
 
 		// Remove from set
 		delete(self.set, process)
@@ -112,8 +112,6 @@ func PrefixOutput(input *os.File, output *os.File, pid int, wg sync.WaitGroup) {
 			output.WriteString(fmt.Sprintf("[%d] %s", pid, line))
 		}
 	}
-
-	fmt.Println("Closing reader")
 
 	wg.Done()
 }
