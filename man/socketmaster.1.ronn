@@ -66,8 +66,7 @@ SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.
     a wider feature-set and written in ruby.
   * [libancillary](http://www.normalesup.org/~george/comp/libancillary/)
   is a cross-platform C library to work with file-descriptors.
-  *
-  [portlisten](http://www.mail-archive.com/kragen-hacks@canonical.org/msg00002.html)
+  * [portlisten](http://www.mail-archive.com/kragen-hacks@canonical.org/msg00002.html)
   another approach to port sharing trough UNIX sockets.
 
 ## BUGS & CODE

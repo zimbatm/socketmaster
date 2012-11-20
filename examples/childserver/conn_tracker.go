@@ -30,12 +30,14 @@ func NewTrackingListener(listener net.Listener) *TrackingListener {
 }
 
 func (self *TrackingListener) Accept() (net.Conn, error) {
+	self.wg.Add(1)
+
 	conn, err := self.Listener.Accept()
 	if err != nil {
+		self.wg.Done()
 		return nil, err
 	}
 
-	self.wg.Add(1)
 
 	conn2 := &trackedConn{
 		Conn:     conn,

@@ -53,7 +53,8 @@ func ListenFile(rawurl string) (file *os.File, err error) {
 			return
 		}
 
-		// TODO: Is the listener going to close the file when garbage-collected ?
+		// Closing the listener doesn't affect the file and reversely.
+		// http://golang.org/pkg/net/#TCPListener.File
 		file, err = listener.File()
 	default:
 		err = fmt.Errorf("Unsupported scheme: %s", u.Scheme)
