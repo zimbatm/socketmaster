@@ -17,20 +17,18 @@ func handleSignals(processGroup *ProcessGroup, c chan os.Signal, startTime int) 
 
 		switch syscallSignal {
 		case syscall.SIGHUP:
-			go func() {
-				process, err := processGroup.StartProcess()
-				if err != nil {
-					log.Println("Could not start new process: %v", err)
-				} else {
-					if startTime > 0 {
-						time.Sleep(time.Duration(startTime) * time.Millisecond)
-					}
-
-					// A possible improvement woud be to only swap the
-					// process if the new child is still alive.
-					processGroup.SignalAll(signal, process)
+			process, err := processGroup.StartProcess()
+			if err != nil {
+				log.Println("Could not start new process: %v", err)
+			} else {
+				if startTime > 0 {
+					time.Sleep(time.Duration(startTime) * time.Millisecond)
 				}
-			}()
+
+				// A possible improvement woud be to only swap the
+				// process if the new child is still alive.
+				processGroup.SignalAll(signal, process)
+			}
 		default:
 			// Forward signal
 			processGroup.SignalAll(signal, nil)
