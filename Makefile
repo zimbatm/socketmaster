@@ -35,6 +35,12 @@ deb:
 	$(MAKE) install DESTDIR=$(TOP)/fpm/usr/local
 	fpm -s dir -t deb -n socketmaster -v $(VERSION) -C $(TOP)/fpm --license MIT --vendor PandaStream --maintainer "<jonas@pandastream.com>" --url http://pandastream.github.com/socketmaster .
 
+version:
+	@echo socketmaster v$(VERSION)
+
+release:
+	git tag v$(VERSION)
+
 clean:
 	rm -f socketmaster man/*.1
 	rm -rf fpm
