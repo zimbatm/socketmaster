@@ -36,4 +36,4 @@ install: all
 	install -d bin $(DESTDIR)/bin
 	install -d man $(DESTDIR)/man/man1
 	install -C socketmaster $(DESTDIR)/bin/socketmaster
-	cp -R man/*.1 $(DESTDIR)/share/man/man1
+	cp -R man/*.1 $(DESTDIR)/man/man1
