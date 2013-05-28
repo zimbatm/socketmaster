@@ -8,16 +8,21 @@ import (
 )
 
 type ProcessGroup struct {
-	set map[*os.Process]bool
+	set *processSet
 	wg  sync.WaitGroup
 
 	commandPath string
 	sockfile    *os.File
 }
 
+type processSet struct {
+	sync.Mutex
+	set map[*os.Process]bool
+}
+
 func MakeProcessGroup(commandPath string, sockfile *os.File) *ProcessGroup {
 	pg := &ProcessGroup{
-		set: make(map[*os.Process]bool),
+		set: newProcessSet(),
 
 		commandPath: commandPath,
 		sockfile:    sockfile,
@@ -46,7 +51,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	}
 
 	// Add to set
-	self.set[process] = true
+	self.set.Add(process)
 
 	// Helps waiting for process, stdout and stderr
 	var wg sync.WaitGroup
@@ -63,7 +68,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		log.Println(process.Pid, state, err)
 
 		// Remove from set
-		delete(self.set, process)
+		self.set.Remove(process)
 
 		// Process is gone
 		ioReader.Close()
@@ -80,15 +85,44 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 }
 
 func (self *ProcessGroup) SignalAll(signal os.Signal, except *os.Process) {
-	for process, _ := range self.set {
+	self.set.Each(func(process *os.Process) {
 		if process != except {
 			process.Signal(signal)
 		}
-	}
+	})
 }
 
 func (self *ProcessGroup) WaitAll() {
 	self.wg.Wait()
+}
+
+// A thread-safe process set
+func newProcessSet() *processSet {
+	set := new(processSet)
+	set.set = make(map[*os.Process]bool)
+	return set
+}
+
+func (self *processSet) Add(process *os.Process) {
+	self.Lock()
+	defer self.Unlock()
+
+	self.set[process] = true
+}
+
+func (self *processSet) Each(fn func(*os.Process)) {
+	self.Lock()
+	defer self.Unlock()
+
+	for process, _ := range self.set {
+		fn(process)
+	}
+}
+
+func (self *processSet) Remove(process *os.Process) {
+	self.Lock()
+	defer self.Unlock()
+	delete(self.set, process)
 }
 
 func logOutput(input *os.File, pid int, wg sync.WaitGroup) {
