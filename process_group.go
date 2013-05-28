@@ -2,85 +2,83 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
+	"os/user"
+	"strconv"
 	"sync"
+	"syscall"
 )
 
 type ProcessGroup struct {
-	set map[*os.Process]bool
+	set *processSet
 	wg  sync.WaitGroup
 
 	commandPath string
 	sockfile    *os.File
+	user        *user.User
 }
 
-func MakeProcessGroup(commandPath string, sockfile *os.File) *ProcessGroup {
-	pg := &ProcessGroup{
-		set: make(map[*os.Process]bool),
+type processSet struct {
+	sync.Mutex
+	set map[*os.Process]bool
+}
 
+func MakeProcessGroup(commandPath string, sockfile *os.File, u *user.User) *ProcessGroup {
+	return &ProcessGroup{
+		set:         newProcessSet(),
 		commandPath: commandPath,
 		sockfile:    sockfile,
+		user:        u,
 	}
-
-	return pg
 }
 
 func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	self.wg.Add(1)
 
-	stdoutReader, stdoutWriter, err := os.Pipe()
-	if err != nil {
-		return nil, err
-	}
-
-	stderrReader, stderrWriter, err := os.Pipe()
+	ioReader, ioWriter, err := os.Pipe()
 	if err != nil {
 		return nil, err
 	}
 
 	env := append(os.Environ(), "EINHORN_FDS=3")
-	procattr := &os.ProcAttr{
+
+	procAttr := &os.ProcAttr{
 		Env:   env,
-		Files: []*os.File{os.Stdin, stdoutWriter, stderrWriter, self.sockfile},
+		Files: []*os.File{os.Stdin, ioWriter, ioWriter, self.sockfile},
+		Sys:   &syscall.SysProcAttr{},
 	}
 
-	process, err = os.StartProcess(self.commandPath, []string{}, procattr)
+	if self.user != nil {
+		uid, _ := strconv.Atoi(self.user.Uid)
+		gid, _ := strconv.Atoi(self.user.Gid)
+
+		procAttr.Sys.Credential = &syscall.Credential{uint32(uid), uint32(gid), nil}
+	}
+
+	log.Println("Starting", self.commandPath)
+	process, err = os.StartProcess(self.commandPath, []string{}, procAttr)
 	if err != nil {
 		return
 	}
 
 	// Add to set
-	self.set[process] = true
+	self.set.Add(process)
 
-	// Helps waiting for process, stdout and stderr
-	var wg sync.WaitGroup
-
-	// Prefix stdout and stderr lines with the [pid]
-	go PrefixOutput(stdoutReader, os.Stdout, process.Pid, wg)
-	go PrefixOutput(stderrReader, os.Stderr, process.Pid, wg)
+	// Prefix stdout and stderr lines with the [pid] and send it to the log
+	go logOutput(ioReader, process.Pid, self.wg)
 
 	// Handle the process death
 	go func() {
-		wg.Add(1)
-
 		state, err := process.Wait()
 
 		log.Println(process.Pid, state, err)
 
 		// Remove from set
-		delete(self.set, process)
+		self.set.Remove(process)
 
 		// Process is gone
-		stdoutReader.Close()
-		stderrReader.Close()
-		wg.Done()
-	}()
-
-	// Wait for process, stdout and stderr before declaring the process done
-	go func() {
-		wg.Wait()
+		ioReader.Close()
 		self.wg.Done()
 	}()
 
@@ -88,18 +86,47 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 }
 
 func (self *ProcessGroup) SignalAll(signal os.Signal, except *os.Process) {
-	for process, _ := range self.set {
+	self.set.Each(func(process *os.Process) {
 		if process != except {
 			process.Signal(signal)
 		}
-	}
+	})
 }
 
 func (self *ProcessGroup) WaitAll() {
 	self.wg.Wait()
 }
 
-func PrefixOutput(input *os.File, output *os.File, pid int, wg sync.WaitGroup) {
+// A thread-safe process set
+func newProcessSet() *processSet {
+	set := new(processSet)
+	set.set = make(map[*os.Process]bool)
+	return set
+}
+
+func (self *processSet) Add(process *os.Process) {
+	self.Lock()
+	defer self.Unlock()
+
+	self.set[process] = true
+}
+
+func (self *processSet) Each(fn func(*os.Process)) {
+	self.Lock()
+	defer self.Unlock()
+
+	for process, _ := range self.set {
+		fn(process)
+	}
+}
+
+func (self *processSet) Remove(process *os.Process) {
+	self.Lock()
+	defer self.Unlock()
+	delete(self.set, process)
+}
+
+func logOutput(input *os.File, pid int, wg sync.WaitGroup) {
 	var err error
 	var line string
 	wg.Add(1)
@@ -109,7 +136,7 @@ func PrefixOutput(input *os.File, output *os.File, pid int, wg sync.WaitGroup) {
 	for err == nil {
 		line, err = reader.ReadString('\n')
 		if line != "" {
-			output.WriteString(fmt.Sprintf("[%d] %s", pid, line))
+			log.Printf("[%d] %s", pid, line)
 		}
 	}
 

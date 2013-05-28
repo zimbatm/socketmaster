@@ -2,10 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"log/syslog"
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
 	"syscall"
 	"time"
 )
@@ -19,7 +22,7 @@ func handleSignals(processGroup *ProcessGroup, c chan os.Signal, startTime int) 
 		case syscall.SIGHUP:
 			process, err := processGroup.StartProcess()
 			if err != nil {
-				log.Println("Could not start new process: %v", err)
+				log.Printf("Could not start new process: %v\n", err)
 			} else {
 				if startTime > 0 {
 					time.Sleep(time.Duration(startTime) * time.Millisecond)
@@ -37,15 +40,35 @@ func handleSignals(processGroup *ProcessGroup, c chan os.Signal, startTime int) 
 }
 
 func main() {
-	var addr string
-	var err error
-	var startTime int
-	var command string
+	var (
+		addr      string
+		command   string
+		err       error
+		startTime int
+		useSyslog bool
+		username  string
+	)
 
+	flag.StringVar(&command, "command", "", "Program to start")
 	flag.StringVar(&addr, "listen", "tcp://:8080", "Port on which to bind")
 	flag.IntVar(&startTime, "start", 3000, "How long the new process takes to boot in millis")
-	flag.StringVar(&command, "command", "", "Program to start")
+	flag.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
+	flag.StringVar(&username, "user", "", "run the command as this user")
 	flag.Parse()
+
+	tagname := fmt.Sprintf("socketmaster[%d]", syscall.Getpid())
+	if useSyslog {
+		stream, err := syslog.New(syslog.LOG_INFO, tagname)
+		if err != nil {
+			panic(err)
+		}
+		log.SetFlags(0) // disables default timestamping
+		log.SetOutput(stream)
+	} else {
+		log.SetFlags(log.Ldate | log.Ltime)
+		log.SetPrefix(tagname + " ")
+		log.SetOutput(os.Stderr)
+	}
 
 	if command == "" {
 		log.Fatalln("Command path is mandatory")
@@ -56,13 +79,22 @@ func main() {
 		log.Fatalln("Could not find executable", err)
 	}
 
+	log.Println("Listening on", addr)
 	sockfile, err := ListenFile(addr)
 	if err != nil {
 		log.Fatalln("Unable to open socket", err)
 	}
 
+	var targetUser *user.User
+	if username != "" {
+		targetUser, err = user.Lookup(username)
+		if err != nil {
+			log.Fatalln("Unable to find user", err)
+		}
+	}
+
 	// Run the first process
-	processGroup := MakeProcessGroup(commandPath, sockfile)
+	processGroup := MakeProcessGroup(commandPath, sockfile, targetUser)
 	_, err = processGroup.StartProcess()
 	if err != nil {
 		log.Fatalln("Could not start process", err)
