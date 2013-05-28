@@ -38,7 +38,6 @@ func (self *TrackingListener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-
 	conn2 := &trackedConn{
 		Conn:     conn,
 		listener: self,

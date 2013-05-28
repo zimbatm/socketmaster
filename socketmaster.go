@@ -19,7 +19,7 @@ func handleSignals(processGroup *ProcessGroup, c chan os.Signal, startTime int) 
 		case syscall.SIGHUP:
 			process, err := processGroup.StartProcess()
 			if err != nil {
-				log.Println("Could not start new process: %v", err)
+				log.Printf("Could not start new process: %v\n", err)
 			} else {
 				if startTime > 0 {
 					time.Sleep(time.Duration(startTime) * time.Millisecond)
