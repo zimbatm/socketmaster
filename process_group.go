@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"log"
 	"os"
+	"os/user"
+	"strconv"
 	"sync"
+	"syscall"
 )
 
 type ProcessGroup struct {
@@ -13,6 +16,7 @@ type ProcessGroup struct {
 
 	commandPath string
 	sockfile    *os.File
+	user        *user.User
 }
 
 type processSet struct {
@@ -20,15 +24,13 @@ type processSet struct {
 	set map[*os.Process]bool
 }
 
-func MakeProcessGroup(commandPath string, sockfile *os.File) *ProcessGroup {
-	pg := &ProcessGroup{
-		set: newProcessSet(),
-
+func MakeProcessGroup(commandPath string, sockfile *os.File, u *user.User) *ProcessGroup {
+	return &ProcessGroup{
+		set:         newProcessSet(),
 		commandPath: commandPath,
 		sockfile:    sockfile,
+		user:        u,
 	}
-
-	return pg
 }
 
 func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
@@ -40,12 +42,22 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	}
 
 	env := append(os.Environ(), "EINHORN_FDS=3")
-	procattr := &os.ProcAttr{
+
+	procAttr := &os.ProcAttr{
 		Env:   env,
 		Files: []*os.File{os.Stdin, ioWriter, ioWriter, self.sockfile},
+		Sys:   &syscall.SysProcAttr{},
 	}
 
-	process, err = os.StartProcess(self.commandPath, []string{}, procattr)
+	if self.user != nil {
+		uid, _ := strconv.Atoi(self.user.Uid)
+		gid, _ := strconv.Atoi(self.user.Gid)
+
+		procAttr.Sys.Credential = &syscall.Credential{uint32(uid), uint32(gid), nil}
+	}
+
+	log.Println("Starting", self.commandPath)
+	process, err = os.StartProcess(self.commandPath, []string{}, procAttr)
 	if err != nil {
 		return
 	}

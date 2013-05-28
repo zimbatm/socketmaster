@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
 	"syscall"
 	"time"
 )
@@ -45,12 +46,14 @@ func main() {
 		err       error
 		startTime int
 		useSyslog bool
+		username  string
 	)
 
+	flag.StringVar(&command, "command", "", "Program to start")
 	flag.StringVar(&addr, "listen", "tcp://:8080", "Port on which to bind")
 	flag.IntVar(&startTime, "start", 3000, "How long the new process takes to boot in millis")
-	flag.StringVar(&command, "command", "", "Program to start")
 	flag.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
+	flag.StringVar(&username, "user", "", "run the command as this user")
 	flag.Parse()
 
 	tagname := fmt.Sprintf("socketmaster[%d]", syscall.Getpid())
@@ -76,13 +79,22 @@ func main() {
 		log.Fatalln("Could not find executable", err)
 	}
 
+	log.Println("Listening on", addr)
 	sockfile, err := ListenFile(addr)
 	if err != nil {
 		log.Fatalln("Unable to open socket", err)
 	}
 
+	var targetUser *user.User
+	if username != "" {
+		targetUser, err = user.Lookup(username)
+		if err != nil {
+			log.Fatalln("Unable to find user", err)
+		}
+	}
+
 	// Run the first process
-	processGroup := MakeProcessGroup(commandPath, sockfile)
+	processGroup := MakeProcessGroup(commandPath, sockfile, targetUser)
 	_, err = processGroup.StartProcess()
 	if err != nil {
 		log.Fatalln("Could not start process", err)

@@ -29,6 +29,10 @@ and can keep your file-descriptor indefinitely open.
   * `-syslog`:
     Tells socketmaster to log to syslog.
 
+  * `-user`=LOGIN:
+    Sets the child process's uid/gid to the given user (looked up in /etc/passwd).
+    This command only works when socketmaster is run as root.
+
 ## HOW IT WORKS
 
 On start:
