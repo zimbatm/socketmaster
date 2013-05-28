@@ -83,7 +83,7 @@
 
 <h2 id="SYNOPSIS">SYNOPSIS</h2>
 
-<p><code>socketmaster</code> [-listen=URI] [-command=PATH] [-start=MILLIS]</p>
+<p><code>socketmaster</code> [-listen=URI] [-command=PATH] [-start=MILLIS] [-syslog]</p>
 
 <h2 id="DESCRIPTION">DESCRIPTION</h2>
 
@@ -95,12 +95,15 @@ program. Because socketmaster is simple enough is doesn't need to be restarted
 and can keep your file-descriptor indefinitely open.</p>
 
 <dl>
-<dt><code>-listen</code>=URI</dt><dd><p>One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
-Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock</p></dd>
 <dt><code>-command</code>=PATH</dt><dd><p>Defines the location of the program to execute and pass the file-descriptor
 onto. If you need to add arguments to the program use a wrapper script.</p></dd>
+<dt><code>-listen</code>=URI</dt><dd><p>One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
+Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock</p></dd>
 <dt><code>-start</code>=MILLIS</dt><dd><p>Determines how long socketmaster waits before signaling the old process.
 If MILLIS is set to zero that feature is disabled.</p></dd>
+<dt class="flush"><code>-syslog</code></dt><dd><p>Tells socketmaster to log to syslog.</p></dd>
+<dt><code>-user</code>=LOGIN</dt><dd><p>Sets the child process's uid/gid to the given user (looked up in /etc/passwd).
+This command only works when socketmaster is run as root.</p></dd>
 </dl>
 
 
@@ -193,7 +196,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'>PandaStream</li>
-    <li class='tc'>November 2012</li>
+    <li class='tc'>May 2013</li>
     <li class='tr'>socketmaster(1)</li>
   </ol>
 
