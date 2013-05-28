@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -30,12 +29,7 @@ func MakeProcessGroup(commandPath string, sockfile *os.File) *ProcessGroup {
 func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	self.wg.Add(1)
 
-	stdoutReader, stdoutWriter, err := os.Pipe()
-	if err != nil {
-		return nil, err
-	}
-
-	stderrReader, stderrWriter, err := os.Pipe()
+	ioReader, ioWriter, err := os.Pipe()
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +37,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	env := append(os.Environ(), "EINHORN_FDS=3")
 	procattr := &os.ProcAttr{
 		Env:   env,
-		Files: []*os.File{os.Stdin, stdoutWriter, stderrWriter, self.sockfile},
+		Files: []*os.File{os.Stdin, ioWriter, ioWriter, self.sockfile},
 	}
 
 	process, err = os.StartProcess(self.commandPath, []string{}, procattr)
@@ -57,9 +51,8 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	// Helps waiting for process, stdout and stderr
 	var wg sync.WaitGroup
 
-	// Prefix stdout and stderr lines with the [pid]
-	go PrefixOutput(stdoutReader, os.Stdout, process.Pid, wg)
-	go PrefixOutput(stderrReader, os.Stderr, process.Pid, wg)
+	// Prefix stdout and stderr lines with the [pid] and send it to the log
+	go logOutput(ioReader, process.Pid, wg)
 
 	// Handle the process death
 	go func() {
@@ -73,8 +66,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		delete(self.set, process)
 
 		// Process is gone
-		stdoutReader.Close()
-		stderrReader.Close()
+		ioReader.Close()
 		wg.Done()
 	}()
 
@@ -99,7 +91,7 @@ func (self *ProcessGroup) WaitAll() {
 	self.wg.Wait()
 }
 
-func PrefixOutput(input *os.File, output *os.File, pid int, wg sync.WaitGroup) {
+func logOutput(input *os.File, pid int, wg sync.WaitGroup) {
 	var err error
 	var line string
 	wg.Add(1)
@@ -109,7 +101,7 @@ func PrefixOutput(input *os.File, output *os.File, pid int, wg sync.WaitGroup) {
 	for err == nil {
 		line, err = reader.ReadString('\n')
 		if line != "" {
-			output.WriteString(fmt.Sprintf("[%d] %s", pid, line))
+			log.Printf("[%d] %s", pid, line)
 		}
 	}
 
