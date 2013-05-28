@@ -3,7 +3,7 @@ socketmaster(1) -- Zero downtime restart for your apps
 
 ## SYNOPSIS
 
-`socketmaster` [-listen=URI] [-command=PATH] [-start=MILLIS]
+`socketmaster` [-listen=URI] [-command=PATH] [-start=MILLIS] [-syslog]
 
 ## DESCRIPTION
 
@@ -14,17 +14,20 @@ socketmaster opens the socket you want to listen on and passes it onto your
 program. Because socketmaster is simple enough is doesn't need to be restarted
 and can keep your file-descriptor indefinitely open.
 
+  * `-command`=PATH:
+    Defines the location of the program to execute and pass the file-descriptor
+    onto. If you need to add arguments to the program use a wrapper script.
+  
   * `-listen`=URI:
     One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
     Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock
 
-  * `-command`=PATH:
-    Defines the location of the program to execute and pass the file-descriptor
-    onto. If you need to add arguments to the program use a wrapper script.
-
   * `-start`=MILLIS:
     Determines how long socketmaster waits before signaling the old process.
     If MILLIS is set to zero that feature is disabled.
+
+  * `-syslog`:
+    Tells socketmaster to log to syslog.
 
 ## HOW IT WORKS
 

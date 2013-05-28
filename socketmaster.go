@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"log/syslog"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -37,15 +39,33 @@ func handleSignals(processGroup *ProcessGroup, c chan os.Signal, startTime int) 
 }
 
 func main() {
-	var addr string
-	var err error
-	var startTime int
-	var command string
+	var (
+		addr      string
+		command   string
+		err       error
+		startTime int
+		useSyslog bool
+	)
 
 	flag.StringVar(&addr, "listen", "tcp://:8080", "Port on which to bind")
 	flag.IntVar(&startTime, "start", 3000, "How long the new process takes to boot in millis")
 	flag.StringVar(&command, "command", "", "Program to start")
+	flag.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
 	flag.Parse()
+
+	tagname := fmt.Sprintf("socketmaster[%d]", syscall.Getpid())
+	if useSyslog {
+		stream, err := syslog.New(syslog.LOG_INFO, tagname)
+		if err != nil {
+			panic(err)
+		}
+		log.SetFlags(0) // disables default timestamping
+		log.SetOutput(stream)
+	} else {
+		log.SetFlags(log.Ldate | log.Ltime)
+		log.SetPrefix(tagname + " ")
+		log.SetOutput(os.Stderr)
+	}
 
 	if command == "" {
 		log.Fatalln("Command path is mandatory")
