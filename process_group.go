@@ -53,16 +53,11 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	// Add to set
 	self.set.Add(process)
 
-	// Helps waiting for process, stdout and stderr
-	var wg sync.WaitGroup
-
 	// Prefix stdout and stderr lines with the [pid] and send it to the log
-	go logOutput(ioReader, process.Pid, wg)
+	go logOutput(ioReader, process.Pid, self.wg)
 
 	// Handle the process death
 	go func() {
-		wg.Add(1)
-
 		state, err := process.Wait()
 
 		log.Println(process.Pid, state, err)
@@ -72,12 +67,6 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 
 		// Process is gone
 		ioReader.Close()
-		wg.Done()
-	}()
-
-	// Wait for process, stdout and stderr before declaring the process done
-	go func() {
-		wg.Wait()
 		self.wg.Done()
 	}()
 
