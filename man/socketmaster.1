@@ -31,6 +31,10 @@ Determines how long socketmaster waits before signaling the old process\. If MIL
 \fB\-syslog\fR
 Tells socketmaster to log to syslog\.
 .
+.TP
+\fB\-user\fR=LOGIN
+Sets the child process\'s uid/gid to the given user (looked up in /etc/passwd)\. This command only works when socketmaster is run as root\.
+.
 .SH "HOW IT WORKS"
 On start:
 .
