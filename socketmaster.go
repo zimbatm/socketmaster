@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const PROGRAM_NAME = "socketmaster"
+
 func handleSignals(processGroup *ProcessGroup, c chan os.Signal, startTime int) {
 	for {
 		signal := <-c // os.Signal
@@ -56,18 +58,18 @@ func main() {
 	flag.StringVar(&username, "user", "", "run the command as this user")
 	flag.Parse()
 
-	tagname := fmt.Sprintf("socketmaster[%d]", syscall.Getpid())
 	if useSyslog {
-		stream, err := syslog.New(syslog.LOG_INFO, tagname)
+		stream, err := syslog.New(syslog.LOG_INFO, PROGRAM_NAME)
 		if err != nil {
 			panic(err)
 		}
 		log.SetFlags(0) // disables default timestamping
 		log.SetOutput(stream)
+		log.SetPrefix("")
 	} else {
 		log.SetFlags(log.Ldate | log.Ltime)
-		log.SetPrefix(tagname + " ")
 		log.SetOutput(os.Stderr)
+		log.SetPrefix(fmt.Sprintf("%s[%d] ", PROGRAM_NAME, syscall.Getpid()))
 	}
 
 	if command == "" {
