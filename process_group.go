@@ -53,7 +53,10 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		uid, _ := strconv.Atoi(self.user.Uid)
 		gid, _ := strconv.Atoi(self.user.Gid)
 
-		procAttr.Sys.Credential = &syscall.Credential{uint32(uid), uint32(gid), nil}
+		procAttr.Sys.Credential = &syscall.Credential{
+			Uid: uint32(uid),
+			Gid: uint32(gid),
+		}
 	}
 
 	log.Println("Starting", self.commandPath)
