@@ -15,7 +15,7 @@ import (
 
 const PROGRAM_NAME = "socketmaster"
 
-func handleSignals(processGroup *ProcessGroup, c chan os.Signal, startTime int) {
+func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int) {
 	for {
 		signal := <-c // os.Signal
 		syscallSignal := signal.(syscall.Signal)
