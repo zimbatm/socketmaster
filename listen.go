@@ -10,6 +10,12 @@ import (
 
 // Utility to open a tcp[46]? or fd
 func ListenFile(rawurl string) (file *os.File, err error) {
+
+	if socketMasterFd := os.Getenv("SOCKETMASTER_FD"); socketMasterFd != "" {
+		os.Setenv("SOCKETMASTER_FD", "")
+		rawurl = fmt.Sprintf("fd://%s", socketMasterFd)
+	}
+
 	u, err := url.Parse(rawurl)
 	if err != nil {
 		return

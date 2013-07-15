@@ -15,12 +15,15 @@ import (
 
 const PROGRAM_NAME = "socketmaster"
 
-func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int) {
+func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int, sockfile *os.File) {
 	for {
 		signal := <-c // os.Signal
 		syscallSignal := signal.(syscall.Signal)
 
 		switch syscallSignal {
+		case syscall.SIGUSR1:
+			socketMasterFdEnvVar := fmt.Sprintf("SOCKETMASTER_FD=%d", sockfile.Fd())
+			syscall.Exec(os.Args[0], os.Args, append(os.Environ(), socketMasterFdEnvVar))
 		case syscall.SIGHUP:
 			process, err := processGroup.StartProcess()
 			if err != nil {
@@ -104,8 +107,8 @@ func main() {
 
 	// Monitoring the processes
 	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
-	go handleSignals(processGroup, c, startTime)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGUSR1)
+	go handleSignals(processGroup, c, startTime, sockfile)
 
 	// TODO: Full restart on USR2. Make sure the listener file is not set to SO_CLOEXEC
 	// TODO: Restart processes if they die

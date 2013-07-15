@@ -17,7 +17,7 @@ and can keep your file-descriptor indefinitely open.
   * `-command`=PATH:
     Defines the location of the program to execute and pass the file-descriptor
     onto. If you need to add arguments to the program use a wrapper script.
-  
+
   * `-listen`=URI:
     One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
     Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock
@@ -40,6 +40,11 @@ On start:
  * socketmaster open the -listen port
  * socketmaster starts the -command with the socket on fd 3 and EINHORN_FDS=3
  * as soon as all child processes are gone, socketmaster stops as well
+
+On SIGUSR1:
+
+ * socketmaster restarts itself with the same command line options
+    * without dropping or refusing any connections
 
 On SIGHUP:
 
