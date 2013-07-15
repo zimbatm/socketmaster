@@ -45,6 +45,11 @@ On start:
  * socketmaster starts the -command with the socket on fd 3 and EINHORN_FDS=3
  * as soon as all child processes are gone, socketmaster stops as well
 
+On SIGUSR1:
+
+ * socketmaster restarts itself with the same command line options
+    * without dropping or refusing any connections
+
 On SIGHUP:
 
  * socketmaster starts a new -command
