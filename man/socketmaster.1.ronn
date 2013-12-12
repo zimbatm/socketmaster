@@ -7,8 +7,8 @@ socketmaster(1) -- Zero downtime restart for your apps
 
 ## DESCRIPTION
 
-socketmaster is a generic solution to the restart problem ; you want to restart
-your app but not loose any active connection nor refuse new connections.
+socketmaster is a generic solution to the restart problem: you want to restart
+your app but neither lose any active connection nor refuse new connections.
 
 socketmaster opens the socket you want to listen on and passes it onto your
 program. Because socketmaster is simple enough is doesn't need to be restarted
@@ -49,7 +49,7 @@ On SIGHUP:
 
 Your server is responsible for:
 
- * open the socket passed on fd 3
+ * opening the socket passed on fd 3
  * not crashing
  * gracefully shutdown on SIGHUP (close the listener, wait for the child
    connections to close)
@@ -57,7 +57,7 @@ Your server is responsible for:
 ## ENVIRONMENT
 
   * `EINHORN_FDS`:
-    This variable is set by socketmaster and passed onto the childs. It's
+    This variable is set by socketmaster and passed onto the children. It's
     value is always 3 and meant for einhorn compatiblity.
 
 ## SIGNALS
@@ -78,8 +78,8 @@ SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.
 
 ## BUGS & CODE
 
-Bug reports and other contributions are welcome !
-The project's source and issue tracker lies on
+Bug reports and other contributions are welcome!
+The project's source and issue tracker is located at
 <https://github.com/zimbatm/socketmaster/>
 
 ## COPYRIGHT
