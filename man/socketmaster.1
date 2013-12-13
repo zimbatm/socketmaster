@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "SOCKETMASTER" "1" "August 2013" "PandaStream" ""
+.TH "SOCKETMASTER" "1" "December 2013" "PandaStream" ""
 .
 .SH "NAME"
 \fBsocketmaster\fR \- Zero downtime restart for your apps
@@ -10,7 +10,7 @@
 \fBsocketmaster\fR [\-listen=URI] [\-command=PATH] [\-start=MILLIS] [\-syslog]
 .
 .SH "DESCRIPTION"
-socketmaster is a generic solution to the restart problem ; you want to restart your app but not loose any active connection nor refuse new connections\.
+socketmaster is a generic solution to the restart problem: you want to restart your app but neither lose any active connection nor refuse new connections\.
 .
 .P
 socketmaster opens the socket you want to listen on and passes it onto your program\. Because socketmaster is simple enough is doesn\'t need to be restarted and can keep your file\-descriptor indefinitely open\.
@@ -67,7 +67,7 @@ sends a SIGHUP to the other child processes
 Your server is responsible for:
 .
 .IP "\(bu" 4
-open the socket passed on fd 3
+opening the socket passed on fd 3
 .
 .IP "\(bu" 4
 not crashing
@@ -81,7 +81,7 @@ gracefully shutdown on SIGHUP (close the listener, wait for the child connection
 .
 .TP
 \fBEINHORN_FDS\fR
-This variable is set by socketmaster and passed onto the childs\. It\'s value is always 3 and meant for einhorn compatiblity\.
+This variable is set by socketmaster and passed onto the children\. It\'s value is always 3 and meant for einhorn compatiblity\.
 .
 .SH "SIGNALS"
 On SIGHUP, socketmaster starts a new child process, waits for \-start and sends a HUP to the old process\.
@@ -103,7 +103,7 @@ portlisten \fIhttp://www\.mail\-archive\.com/kragen\-hacks@canonical\.org/msg000
 .IP "" 0
 .
 .SH "BUGS & CODE"
-Bug reports and other contributions are welcome ! The project\'s source and issue tracker lies on \fIhttps://github\.com/zimbatm/socketmaster/\fR
+Bug reports and other contributions are welcome! The project\'s source and issue tracker is located at \fIhttps://github\.com/zimbatm/socketmaster/\fR
 .
 .SH "COPYRIGHT"
 socketmaster is Copyright (C) 2012 PandaStream \fIhttp://pandastream\.com\fR
