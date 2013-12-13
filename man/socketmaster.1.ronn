@@ -75,6 +75,8 @@ SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.
   is a cross-platform C library to work with file-descriptors.
   * [portlisten](http://www.mail-archive.com/kragen-hacks@canonical.org/msg00002.html)
   another approach to port sharing trough UNIX sockets.
+  * [systemd](http://freedesktop.org/wiki/Software/systemd/) is an init system / process manager who supports socket activation and delegation.
+  * [circus](http://circus.readthedocs.org/en/latest/) is a process manager with socket delegation.
 
 ## BUGS & CODE
 
