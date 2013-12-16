@@ -13,7 +13,7 @@
 socketmaster is a generic solution to the restart problem: you want to restart your app but neither lose any active connection nor refuse new connections\.
 .
 .P
-socketmaster opens the socket you want to listen on and passes it onto your program\. Because socketmaster is simple enough is doesn\'t need to be restarted and can keep your file\-descriptor indefinitely open\.
+socketmaster opens the socket you want to listen on and passes it onto your program\. Because socketmaster is simple enough it doesn\'t need to be restarted and can keep your file\-descriptor indefinitely open\.
 .
 .TP
 \fB\-command\fR=PATH
@@ -81,7 +81,7 @@ gracefully shutdown on SIGHUP (close the listener, wait for the child connection
 .
 .TP
 \fBEINHORN_FDS\fR
-This variable is set by socketmaster and passed onto the children\. It\'s value is always 3 and meant for einhorn compatiblity\.
+This variable is set by socketmaster and passed onto the children\. Its value is always 3 and meant for einhorn compatibility\.
 .
 .SH "SIGNALS"
 On SIGHUP, socketmaster starts a new child process, waits for \-start and sends a HUP to the old process\.
@@ -99,6 +99,12 @@ libancillary \fIhttp://www\.normalesup\.org/~george/comp/libancillary/\fR is a c
 .
 .IP "\(bu" 4
 portlisten \fIhttp://www\.mail\-archive\.com/kragen\-hacks@canonical\.org/msg00002\.html\fR another approach to port sharing trough UNIX sockets\.
+.
+.IP "\(bu" 4
+systemd \fIhttp://freedesktop\.org/wiki/Software/systemd/\fR is an init system / process manager who supports socket activation and delegation\.
+.
+.IP "\(bu" 4
+circus \fIhttp://circus\.readthedocs\.org/en/latest/\fR is a process manager with socket delegation\.
 .
 .IP "" 0
 .
