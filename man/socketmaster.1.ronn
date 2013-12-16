@@ -11,7 +11,7 @@ socketmaster is a generic solution to the restart problem: you want to restart
 your app but neither lose any active connection nor refuse new connections.
 
 socketmaster opens the socket you want to listen on and passes it onto your
-program. Because socketmaster is simple enough is doesn't need to be restarted
+program. Because socketmaster is simple enough it doesn't need to be restarted
 and can keep your file-descriptor indefinitely open.
 
   * `-command`=PATH:
@@ -57,8 +57,8 @@ Your server is responsible for:
 ## ENVIRONMENT
 
   * `EINHORN_FDS`:
-    This variable is set by socketmaster and passed onto the children. It's
-    value is always 3 and meant for einhorn compatiblity.
+    This variable is set by socketmaster and passed onto the children. Its
+    value is always 3 and meant for einhorn compatibility.
 
 ## SIGNALS
 
