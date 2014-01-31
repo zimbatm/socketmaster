@@ -77,6 +77,7 @@ SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.
   another approach to port sharing trough UNIX sockets.
   * [systemd](http://freedesktop.org/wiki/Software/systemd/) is an init system / process manager who supports socket activation and delegation.
   * [circus](http://circus.readthedocs.org/en/latest/) is a process manager with socket delegation.
+  * [upstart](http://upstart.ubuntu.com/) is an init system / process manager. See http://manpages.ubuntu.com/manpages/precise/en/man7/socket-event.7.html
 
 ## BUGS & CODE
 
