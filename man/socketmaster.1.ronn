@@ -51,6 +51,9 @@ On SIGHUP:
  * waits for -start milliseconds
  * sends a SIGTERM to the other child processes
 
+If the new command is not loaded after -start milliseconds the operation is aborted.
+All SIGHUP happening at that time are ignored.
+
 Your server is responsible for:
 
  * opening the socket passed on fd 3

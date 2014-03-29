@@ -2,39 +2,26 @@ package main
 
 import (
 	"bufio"
-	"flag"
+	"fmt"
 	"log"
 	"os"
-	"os/user"
 	"strconv"
 	"sync"
 	"syscall"
 )
 
 type ProcessGroup struct {
-	set *processSet
+	set *ProcessSet
 	wg  sync.WaitGroup
-
-	commandPath string
-	sockfile    *os.File
-	user        *user.User
 }
 
-type processSet struct {
-	sync.Mutex
-	set map[*os.Process]bool
-}
-
-func MakeProcessGroup(commandPath string, sockfile *os.File, u *user.User) *ProcessGroup {
+func NewProcessGroup() *ProcessGroup {
 	return &ProcessGroup{
-		set:         newProcessSet(),
-		commandPath: commandPath,
-		sockfile:    sockfile,
-		user:        u,
+		set: NewProcessSet(),
 	}
 }
 
-func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
+func (self *ProcessGroup) StartProcess(c *ProcessConfig) (process *os.Process, err error) {
 	self.wg.Add(1)
 
 	ioReader, ioWriter, err := os.Pipe()
@@ -42,17 +29,34 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		return nil, err
 	}
 
-	env := append(os.Environ(), "EINHORN_FDS=3")
+	env := os.Environ()
+	files := []*os.File{os.Stdin, ioWriter, ioWriter}
+	command := c.command
+	args := []string{c.command}
+
+	if len(c.files) > 0 {
+		// Einhorn compat
+		env = append(env, fmt.Sprintf("EINHORN_MASTER_PID=%d", os.Getpid()))
+		env = append(env, fmt.Sprintf("EINHORN_FD_COUNT=%d", len(c.files)))
+		for i, _ := range c.files {
+			env = append(env, fmt.Sprintf("EINHORN_FD_%d=%d", i, i+3))
+		}
+		// SystemD socket activation, LISTEN_PID below
+		env = append(env, fmt.Sprintf("LISTEN_FDS=%d", len(c.files)))
+		files = append(files, c.files...)
+		command = "/bin/sh"
+		args = []string{"/bin/sh", "-c", fmt.Sprintf("LISTEN_PID=$$ exec %s", c.command)}
+	}
 
 	procAttr := &os.ProcAttr{
 		Env:   env,
-		Files: []*os.File{os.Stdin, ioWriter, ioWriter, self.sockfile},
+		Files: files,
 		Sys:   &syscall.SysProcAttr{},
 	}
 
-	if self.user != nil {
-		uid, _ := strconv.Atoi(self.user.Uid)
-		gid, _ := strconv.Atoi(self.user.Gid)
+	if c.user != nil {
+		uid, _ := strconv.Atoi(c.user.Uid)
+		gid, _ := strconv.Atoi(c.user.Gid)
 
 		procAttr.Sys.Credential = &syscall.Credential{
 			Uid: uint32(uid),
@@ -60,9 +64,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		}
 	}
 
-	args := append([]string{self.commandPath}, flag.Args()...)
-	log.Println("Starting", self.commandPath, args)
-	process, err = os.StartProcess(self.commandPath, args, procAttr)
+	process, err = os.StartProcess(command, args, procAttr)
 	if err != nil {
 		return
 	}
@@ -100,35 +102,6 @@ func (self *ProcessGroup) SignalAll(signal os.Signal, except *os.Process) {
 
 func (self *ProcessGroup) WaitAll() {
 	self.wg.Wait()
-}
-
-// A thread-safe process set
-func newProcessSet() *processSet {
-	set := new(processSet)
-	set.set = make(map[*os.Process]bool)
-	return set
-}
-
-func (self *processSet) Add(process *os.Process) {
-	self.Lock()
-	defer self.Unlock()
-
-	self.set[process] = true
-}
-
-func (self *processSet) Each(fn func(*os.Process)) {
-	self.Lock()
-	defer self.Unlock()
-
-	for process, _ := range self.set {
-		fn(process)
-	}
-}
-
-func (self *processSet) Remove(process *os.Process) {
-	self.Lock()
-	defer self.Unlock()
-	delete(self.set, process)
 }
 
 func logOutput(input *os.File, pid int, wg sync.WaitGroup) {

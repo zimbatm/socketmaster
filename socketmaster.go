@@ -15,14 +15,14 @@ import (
 
 const PROGRAM_NAME = "socketmaster"
 
-func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int) {
+func handleSignals(processGroup *ProcessGroup, processConfig *ProcessConfig, c <-chan os.Signal, startTime int) {
 	for {
 		signal := <-c // os.Signal
 		syscallSignal := signal.(syscall.Signal)
 
 		switch syscallSignal {
 		case syscall.SIGHUP:
-			process, err := processGroup.StartProcess()
+			process, err := processGroup.StartProcess(processConfig)
 			if err != nil {
 				log.Printf("Could not start new process: %v\n", err)
 			} else {
@@ -52,7 +52,7 @@ func main() {
 	)
 
 	flag.StringVar(&command, "command", "", "Program to start")
-	flag.StringVar(&addr, "listen", "tcp://:8080", "Port on which to bind")
+	flag.StringVar(&addr, "listen", "", "Port on which to bind")
 	flag.IntVar(&startTime, "start", 3000, "How long the new process takes to boot in millis")
 	flag.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
 	flag.StringVar(&username, "user", "", "run the command as this user")
@@ -68,23 +68,26 @@ func main() {
 		log.SetPrefix("")
 	} else {
 		log.SetFlags(log.Ldate | log.Ltime)
-		log.SetOutput(os.Stderr)
+		log.SetOutput(os.Stdout)
 		log.SetPrefix(fmt.Sprintf("%s[%d] ", PROGRAM_NAME, syscall.Getpid()))
 	}
 
 	if command == "" {
-		log.Fatalln("Command path is mandatory")
+		log.Fatalln("Missing command path")
 	}
 
-	commandPath, err := exec.LookPath(command)
-	if err != nil {
+	if command, err = exec.LookPath(command); err != nil {
 		log.Fatalln("Could not find executable", err)
 	}
 
-	log.Println("Listening on", addr)
-	sockfile, err := ListenFile(addr)
-	if err != nil {
-		log.Fatalln("Unable to open socket", err)
+	var files []*os.File
+	if addr != "" {
+		sockfile, err := ListenFile(addr)
+		if err != nil {
+			log.Fatalln("Unable to open socket", addr, err)
+		}
+		log.Println("Listening on", addr)
+		files = []*os.File{sockfile}
 	}
 
 	var targetUser *user.User
@@ -95,9 +98,11 @@ func main() {
 		}
 	}
 
+	processConfig := NewProcessConfig(command, files, targetUser)
+
 	// Run the first process
-	processGroup := MakeProcessGroup(commandPath, sockfile, targetUser)
-	_, err = processGroup.StartProcess()
+	processGroup := NewProcessGroup()
+	_, err = processGroup.StartProcess(processConfig)
 	if err != nil {
 		log.Fatalln("Could not start process", err)
 	}
@@ -105,10 +110,9 @@ func main() {
 	// Monitoring the processes
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
-	go handleSignals(processGroup, c, startTime)
+	go handleSignals(processGroup, processConfig, c, startTime)
 
 	// TODO: Full restart on USR2. Make sure the listener file is not set to SO_CLOEXEC
-	// TODO: Restart processes if they die
 
 	// For now, exit if no processes are left
 	processGroup.WaitAll()
