@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"path"
 )
 
 type ProcessGroup struct {
@@ -60,7 +61,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	}
 
 	log.Println("Starting", self.commandPath)
-	process, err = os.StartProcess(self.commandPath, []string{}, procAttr)
+	process, err = os.StartProcess(self.commandPath, []string{path.Base(self.commandPath)}, procAttr)
 	if err != nil {
 		return
 	}

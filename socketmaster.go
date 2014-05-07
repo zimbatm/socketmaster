@@ -67,9 +67,9 @@ func main() {
 		log.SetOutput(stream)
 		log.SetPrefix("")
 	} else {
-		log.SetFlags(log.Ldate | log.Ltime)
+		log.SetFlags(0)
 		log.SetOutput(os.Stderr)
-		log.SetPrefix(fmt.Sprintf("%s[%d] ", PROGRAM_NAME, syscall.Getpid()))
+		log.SetPrefix(fmt.Sprintf("[%d] ", syscall.Getpid()))
 	}
 
 	if command == "" {
