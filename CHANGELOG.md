@@ -1,6 +1,12 @@
+v1.0.43 / 2013-07-15
+====================
 
-1.0.40 / 2013-06-18 
-==================
+  * Restart on SIGUSR1
+    * with the same command line options
+    * without dropping or refusing any connections by sharing a fd by environment variable
+
+1.0.40 / 2013-06-18
+===================
 
   * Build socketmaster with go v1.1.1 - Fixes weird issues with shared fds.
   * Avoid double [pid] tags on the syslog output
@@ -15,7 +21,7 @@
 ===================
 
   * Prefix output with the [pid]
-  * Set EINHORN_FDS to be eninhorn-compatible
+  * Set EINHORN_FDS to be einhorn-compatible
   * Adding license and changelog
   * Add a note about other related projects
 
