@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"os/user"
+	"path"
 	"strconv"
 	"sync"
 	"syscall"
@@ -33,7 +35,7 @@ func MakeProcessGroup(commandPath string, sockfile *os.File, u *user.User) *Proc
 	}
 }
 
-func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
+func (self *ProcessGroup) StartProcess(childReadySignal int) (process *os.Process, err error) {
 	self.wg.Add(1)
 
 	ioReader, ioWriter, err := os.Pipe()
@@ -41,7 +43,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		return nil, err
 	}
 
-	env := append(os.Environ(), "EINHORN_FDS=3")
+	env := append(os.Environ(), "EINHORN_FDS=3", fmt.Sprintf("SOCKETMASTER_PID=%d", os.Getpid()), fmt.Sprintf("CHILD_READY_SIGNAL=%d", childReadySignal))
 
 	procAttr := &os.ProcAttr{
 		Env:   env,
@@ -60,7 +62,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	}
 
 	log.Println("Starting", self.commandPath)
-	process, err = os.StartProcess(self.commandPath, []string{}, procAttr)
+	process, err = os.StartProcess(self.commandPath, []string{path.Base(self.commandPath)}, procAttr)
 	if err != nil {
 		return
 	}

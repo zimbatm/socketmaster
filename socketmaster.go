@@ -15,14 +15,15 @@ import (
 
 const PROGRAM_NAME = "socketmaster"
 
-func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int) {
+func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int, childReadySignal int) {
+	childrenProcesses := []*os.Process{}
 	for {
 		signal := <-c // os.Signal
 		syscallSignal := signal.(syscall.Signal)
 
 		switch syscallSignal {
 		case syscall.SIGHUP:
-			process, err := processGroup.StartProcess()
+			process, err := processGroup.StartProcess(childReadySignal)
 			if err != nil {
 				log.Printf("Could not start new process: %v\n", err)
 			} else {
@@ -30,9 +31,23 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 					time.Sleep(time.Duration(startTime) * time.Millisecond)
 				}
 
-				// A possible improvement woud be to only swap the
-				// process if the new child is still alive.
-				processGroup.SignalAll(signal, process)
+				// childReadySignal == 0 means socketmaster do not need to wait for child ready
+				if childReadySignal == 0 {
+					// A possible improvement woud be to only swap the
+					// process if the new child is still alive.
+					processGroup.SignalAll(signal, process)
+				} else {
+					childrenProcesses = append(childrenProcesses, process)
+				}
+			}
+		case syscall.Signal(childReadySignal):
+			fmt.Printf("***** catch signal. len(childrenProcesses) %d\n", len(childrenProcesses))
+			if len(childrenProcesses) > 0 {
+				process := childrenProcesses[0]
+				fmt.Printf("***** process %+v\n", process)
+				childrenProcesses = childrenProcesses[1:]
+				processGroup.SignalAll(syscall.SIGHUP, process)
+
 			}
 		default:
 			// Forward signal
@@ -43,12 +58,13 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 
 func main() {
 	var (
-		addr      string
-		command   string
-		err       error
-		startTime int
-		useSyslog bool
-		username  string
+		addr             string
+		command          string
+		err              error
+		startTime        int
+		useSyslog        bool
+		username         string
+		childReadySignal int
 	)
 
 	flag.StringVar(&command, "command", "", "Program to start")
@@ -56,6 +72,7 @@ func main() {
 	flag.IntVar(&startTime, "start", 3000, "How long the new process takes to boot in millis")
 	flag.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
 	flag.StringVar(&username, "user", "", "run the command as this user")
+	flag.IntVar(&childReadySignal, "child_ready_signal", 0, "The signal child process will send when it's ready")
 	flag.Parse()
 
 	if useSyslog {
@@ -67,9 +84,9 @@ func main() {
 		log.SetOutput(stream)
 		log.SetPrefix("")
 	} else {
-		log.SetFlags(log.Ldate | log.Ltime)
+		log.SetFlags(0)
 		log.SetOutput(os.Stderr)
-		log.SetPrefix(fmt.Sprintf("%s[%d] ", PROGRAM_NAME, syscall.Getpid()))
+		log.SetPrefix(fmt.Sprintf("[%d] ", syscall.Getpid()))
 	}
 
 	if command == "" {
@@ -97,15 +114,19 @@ func main() {
 
 	// Run the first process
 	processGroup := MakeProcessGroup(commandPath, sockfile, targetUser)
-	_, err = processGroup.StartProcess()
+	_, err = processGroup.StartProcess(childReadySignal)
 	if err != nil {
 		log.Fatalln("Could not start process", err)
 	}
 
 	// Monitoring the processes
 	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
-	go handleSignals(processGroup, c, startTime)
+	signals := []os.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP}
+	if childReadySignal != 0 {
+		signals = append(signals, syscall.Signal(childReadySignal))
+	}
+	signal.Notify(c, signals...)
+	go handleSignals(processGroup, c, startTime, childReadySignal)
 
 	// TODO: Full restart on USR2. Make sure the listener file is not set to SO_CLOEXEC
 	// TODO: Restart processes if they die
