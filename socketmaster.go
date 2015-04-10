@@ -32,7 +32,7 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 
 				// A possible improvement woud be to only swap the
 				// process if the new child is still alive.
-				processGroup.SignalAll(signal, process)
+				processGroup.SignalAll(syscall.SIGTERM, process)
 			}
 		default:
 			// Forward signal
