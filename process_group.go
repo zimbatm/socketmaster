@@ -2,12 +2,12 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"log"
 	"os"
 	"os/user"
 	"strconv"
 	"sync"
-	"flag"
 	"syscall"
 )
 
@@ -60,8 +60,8 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		}
 	}
 
-	args := append([]string {self.commandPath},flag.Args()...)
-	log.Println("Starting", self.commandPath,args)
+	args := append([]string{self.commandPath}, flag.Args()...)
+	log.Println("Starting", self.commandPath, args)
 	process, err = os.StartProcess(self.commandPath, args, procAttr)
 	if err != nil {
 		return
