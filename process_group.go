@@ -7,6 +7,7 @@ import (
 	"os/user"
 	"strconv"
 	"sync"
+	"flag"
 	"syscall"
 )
 
@@ -59,8 +60,9 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		}
 	}
 
-	log.Println("Starting", self.commandPath)
-	process, err = os.StartProcess(self.commandPath, []string{}, procAttr)
+	args := append([]string {self.commandPath},flag.Args()...)
+	log.Println("Starting", self.commandPath,args)
+	process, err = os.StartProcess(self.commandPath, args, procAttr)
 	if err != nil {
 		return
 	}

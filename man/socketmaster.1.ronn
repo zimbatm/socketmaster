@@ -16,7 +16,11 @@ and can keep your file-descriptor indefinitely open.
 
   * `-command`=PATH:
     Defines the location of the program to execute and pass the file-descriptor
-    onto. If you need to add arguments to the program use a wrapper script.
+    onto. If you need to add arguments to the program, use -- before the command specific
+    arguments or use a wrapper script.
+
+    e.g.
+    socketmaster -command <command> -- -arg1 -arg2
   
   * `-listen`=URI:
     One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
