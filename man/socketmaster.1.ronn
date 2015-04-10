@@ -49,13 +49,13 @@ On SIGHUP:
 
  * socketmaster starts a new -command
  * waits for -start milliseconds
- * sends a SIGHUP to the other child processes
+ * sends a SIGTERM to the other child processes
 
 Your server is responsible for:
 
  * opening the socket passed on fd 3
  * not crashing
- * gracefully shutdown on SIGHUP (close the listener, wait for the child
+ * gracefully shutdown on SIGTERM (close the listener, wait for the child
    connections to close)
 
 ## ENVIRONMENT
