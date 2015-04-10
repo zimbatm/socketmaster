@@ -21,7 +21,7 @@ and can keep your file-descriptor indefinitely open.
 
     e.g.
     socketmaster -command <command> -- -arg1 -arg2
-  
+
   * `-listen`=URI:
     One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
     Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock
@@ -73,6 +73,8 @@ SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.
 
 ## RELATED PROJECTS
 
+  * [crank](https://github.com/pusher/crank) is the child of socketmaster. It
+    supports controlled rolling restarts and dynamic config.
   * [einhorn](https://github.com/stripe/einhorn) is a project with the same goals,
     a wider feature-set and written in ruby.
   * [libancillary](http://www.normalesup.org/~george/comp/libancillary/)
