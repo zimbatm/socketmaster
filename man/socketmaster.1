@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "SOCKETMASTER" "1" "December 2013" "PandaStream" ""
+.TH "SOCKETMASTER" "1" "April 2015" "PandaStream" ""
 .
 .SH "NAME"
 \fBsocketmaster\fR \- Zero downtime restart for your apps
@@ -17,7 +17,10 @@ socketmaster opens the socket you want to listen on and passes it onto your prog
 .
 .TP
 \fB\-command\fR=PATH
-Defines the location of the program to execute and pass the file\-descriptor onto\. If you need to add arguments to the program use a wrapper script\.
+Defines the location of the program to execute and pass the file\-descriptor onto\. If you need to add arguments to the program, use \-\- before the command specific arguments or use a wrapper script\.
+.
+.IP
+e\.g\. socketmaster \-command \fIcommand\fR \-\- \-arg1 \-arg2
 .
 .TP
 \fB\-listen\fR=URI
@@ -59,7 +62,7 @@ socketmaster starts a new \-command
 waits for \-start milliseconds
 .
 .IP "\(bu" 4
-sends a SIGHUP to the other child processes
+sends a SIGTERM to the other child processes
 .
 .IP "" 0
 .
@@ -73,7 +76,7 @@ opening the socket passed on fd 3
 not crashing
 .
 .IP "\(bu" 4
-gracefully shutdown on SIGHUP (close the listener, wait for the child connections to close)
+gracefully shutdown on SIGTERM (close the listener, wait for the child connections to close)
 .
 .IP "" 0
 .
@@ -92,6 +95,9 @@ SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes\.
 .SH "RELATED PROJECTS"
 .
 .IP "\(bu" 4
+crank \fIhttps://github\.com/pusher/crank\fR is the child of socketmaster\. It supports controlled rolling restarts and dynamic config\.
+.
+.IP "\(bu" 4
 einhorn \fIhttps://github\.com/stripe/einhorn\fR is a project with the same goals, a wider feature\-set and written in ruby\.
 .
 .IP "\(bu" 4
@@ -105,6 +111,9 @@ systemd \fIhttp://freedesktop\.org/wiki/Software/systemd/\fR is an init system /
 .
 .IP "\(bu" 4
 circus \fIhttp://circus\.readthedocs\.org/en/latest/\fR is a process manager with socket delegation\.
+.
+.IP "\(bu" 4
+upstart \fIhttp://upstart\.ubuntu\.com/\fR is an init system / process manager\. See http://manpages\.ubuntu\.com/manpages/precise/en/man7/socket\-event\.7\.html
 .
 .IP "" 0
 .
