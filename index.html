@@ -87,16 +87,20 @@
 
 <h2 id="DESCRIPTION">DESCRIPTION</h2>
 
-<p>socketmaster is a generic solution to the restart problem ; you want to restart
-your app but not loose any active connection nor refuse new connections.</p>
+<p>socketmaster is a generic solution to the restart problem: you want to restart
+your app but neither lose any active connection nor refuse new connections.</p>
 
 <p>socketmaster opens the socket you want to listen on and passes it onto your
-program. Because socketmaster is simple enough is doesn't need to be restarted
+program. Because socketmaster is simple enough it doesn't need to be restarted
 and can keep your file-descriptor indefinitely open.</p>
 
 <dl>
 <dt><code>-command</code>=PATH</dt><dd><p>Defines the location of the program to execute and pass the file-descriptor
-onto. If you need to add arguments to the program use a wrapper script.</p></dd>
+onto. If you need to add arguments to the program, use -- before the command specific
+arguments or use a wrapper script.</p>
+
+<p>e.g.
+socketmaster -command <var>command</var> -- -arg1 -arg2</p></dd>
 <dt><code>-listen</code>=URI</dt><dd><p>One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
 Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock</p></dd>
 <dt><code>-start</code>=MILLIS</dt><dd><p>Determines how long socketmaster waits before signaling the old process.
@@ -123,16 +127,16 @@ This command only works when socketmaster is run as root.</p></dd>
 <ul>
 <li>socketmaster starts a new -command</li>
 <li>waits for -start milliseconds</li>
-<li>sends a SIGHUP to the other child processes</li>
+<li>sends a SIGTERM to the other child processes</li>
 </ul>
 
 
 <p>Your server is responsible for:</p>
 
 <ul>
-<li>open the socket passed on fd 3</li>
+<li>opening the socket passed on fd 3</li>
 <li>not crashing</li>
-<li>gracefully shutdown on SIGHUP (close the listener, wait for the child
+<li>gracefully shutdown on SIGTERM (close the listener, wait for the child
 connections to close)</li>
 </ul>
 
@@ -140,8 +144,8 @@ connections to close)</li>
 <h2 id="ENVIRONMENT">ENVIRONMENT</h2>
 
 <dl>
-<dt><code>EINHORN_FDS</code></dt><dd>This variable is set by socketmaster and passed onto the childs. It's
-value is always 3 and meant for einhorn compatiblity.</dd>
+<dt><code>EINHORN_FDS</code></dt><dd>This variable is set by socketmaster and passed onto the children. Its
+value is always 3 and meant for einhorn compatibility.</dd>
 </dl>
 
 
@@ -155,19 +159,24 @@ HUP to the old process.</p>
 <h2 id="RELATED-PROJECTS">RELATED PROJECTS</h2>
 
 <ul>
+<li><a href="https://github.com/pusher/crank">crank</a> is the child of socketmaster. It
+supports controlled rolling restarts and dynamic config.</li>
 <li><a href="https://github.com/stripe/einhorn">einhorn</a> is a project with the same goals,
 a wider feature-set and written in ruby.</li>
 <li><a href="http://www.normalesup.org/~george/comp/libancillary/">libancillary</a>
 is a cross-platform C library to work with file-descriptors.</li>
 <li><a href="http://www.mail-archive.com/kragen-hacks@canonical.org/msg00002.html">portlisten</a>
 another approach to port sharing trough UNIX sockets.</li>
+<li><a href="http://freedesktop.org/wiki/Software/systemd/">systemd</a> is an init system / process manager who supports socket activation and delegation.</li>
+<li><a href="http://circus.readthedocs.org/en/latest/">circus</a> is a process manager with socket delegation.</li>
+<li><a href="http://upstart.ubuntu.com/">upstart</a> is an init system / process manager. See http://manpages.ubuntu.com/manpages/precise/en/man7/socket-event.7.html</li>
 </ul>
 
 
 <h2 id="BUGS-CODE">BUGS &amp; CODE</h2>
 
-<p>Bug reports and other contributions are welcome !
-The project's source and issue tracker lies on
+<p>Bug reports and other contributions are welcome!
+The project's source and issue tracker is located at
 <a href="https://github.com/zimbatm/socketmaster/" data-bare-link="true">https://github.com/zimbatm/socketmaster/</a></p>
 
 <h2 id="COPYRIGHT">COPYRIGHT</h2>
@@ -196,7 +205,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'>PandaStream</li>
-    <li class='tc'>August 2013</li>
+    <li class='tc'>April 2015</li>
     <li class='tr'>socketmaster(1)</li>
   </ol>
 
