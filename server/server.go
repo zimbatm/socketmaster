@@ -47,12 +47,9 @@ func (a *app) signalHandler() {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
 	go func(c chan os.Signal, listener net.Listener) {
-		for {
-			<-c // os.Signal
-			log.Println("Closing listener")
-			listener.Close()
-		}
-
+		<-c
+		log.Println("Closing listener")
+		listener.Close()
 	}(c, a.listener)
 }
 
