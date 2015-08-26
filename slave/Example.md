@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	socketmaster "github.com/zimbatm/socketmaster/server"
+	"github.com/zimbatm/socketmaster/slave"
 )
 
 var server *http.Server
@@ -31,7 +31,7 @@ func main() {
 		Handler: new(SleepyHandler),
 	}
 
-	socketmaster.Serve(server)
+	slave.Serve(server)
 
 	log.Println("Bye bye")
 }
