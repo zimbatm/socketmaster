@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/zimbatm/socketmaster/listen"
+	"github.com/zimbatm/socketmaster/process"
 	"log"
 	"log/syslog"
 	"os"
@@ -15,14 +17,14 @@ import (
 
 const PROGRAM_NAME = "socketmaster"
 
-func handleSignals(processGroup *ProcessGroup, processConfig *ProcessConfig, c <-chan os.Signal, startTime int) {
+func handleSignals(group *process.Group, config *process.Config, c <-chan os.Signal, startTime int) {
 	for {
 		signal := <-c // os.Signal
 		syscallSignal := signal.(syscall.Signal)
 
 		switch syscallSignal {
 		case syscall.SIGHUP:
-			process, err := processGroup.StartProcess(processConfig)
+			p, err := group.Start(config)
 			if err != nil {
 				log.Printf("Could not start new process: %v\n", err)
 			} else {
@@ -32,11 +34,11 @@ func handleSignals(processGroup *ProcessGroup, processConfig *ProcessConfig, c <
 
 				// A possible improvement woud be to only swap the
 				// process if the new child is still alive.
-				processGroup.SignalAll(syscall.SIGTERM, process)
+				group.SignalAll(syscall.SIGTERM, p)
 			}
 		default:
 			// Forward signal
-			processGroup.SignalAll(signal, nil)
+			group.SignalAll(signal, nil)
 		}
 	}
 }
@@ -52,7 +54,7 @@ func main() {
 	)
 
 	flag.StringVar(&command, "command", "", "Program to start")
-	flag.StringVar(&addr, "listen", "", "Port on which to bind")
+	flag.StringVar(&addr, "listen", "", "Port on which to bind (eg: tcp://:8080)")
 	flag.IntVar(&startTime, "start", 3000, "How long the new process takes to boot in millis")
 	flag.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
 	flag.StringVar(&username, "user", "", "run the command as this user")
@@ -82,7 +84,7 @@ func main() {
 
 	var files []*os.File
 	if addr != "" {
-		sockfile, err := ListenFile(addr)
+		sockfile, _, err := listen.Listen(addr)
 		if err != nil {
 			log.Fatalln("Unable to open socket", addr, err)
 		}
@@ -98,11 +100,11 @@ func main() {
 		}
 	}
 
-	processConfig := NewProcessConfig(command, files, targetUser)
+	config := process.NewConfig(command, files, targetUser)
 
 	// Run the first process
-	processGroup := NewProcessGroup()
-	_, err = processGroup.StartProcess(processConfig)
+	group := process.NewGroup()
+	_, err = group.Start(config)
 	if err != nil {
 		log.Fatalln("Could not start process", err)
 	}
@@ -110,10 +112,10 @@ func main() {
 	// Monitoring the processes
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
-	go handleSignals(processGroup, processConfig, c, startTime)
+	go handleSignals(group, config, c, startTime)
 
 	// TODO: Full restart on USR2. Make sure the listener file is not set to SO_CLOEXEC
 
 	// For now, exit if no processes are left
-	processGroup.WaitAll()
+	group.WaitAll()
 }

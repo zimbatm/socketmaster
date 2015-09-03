@@ -1,4 +1,4 @@
-package main
+package listen
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 	"strconv"
 )
 
-// Utility to open a tcp[46]? or fd
-func ListenFile(rawurl string) (file *os.File, err error) {
+// Utility to open a tcp[46]? sockets or a file descriptor
+func Listen(rawurl string) (file *os.File, l net.Listener, err error) {
 	u, err := url.Parse(rawurl)
 	if err != nil {
 		return
@@ -24,6 +24,7 @@ func ListenFile(rawurl string) (file *os.File, err error) {
 		}
 		// NOTE: The name argument doesn't really matter apparently
 		file = os.NewFile(uintptr(fd), fmt.Sprintf("fd://%d", fd))
+		l, err = net.FileListener(file)
 	case "unix": //, "unixpacket", "unixgram":
 		var laddr *net.UnixAddr
 		var listener *net.UnixListener
@@ -38,6 +39,7 @@ func ListenFile(rawurl string) (file *os.File, err error) {
 			return
 		}
 
+		l = net.Listener(listener)
 		file, err = listener.File()
 	case "tcp", "tcp4", "tcp6":
 		var laddr *net.TCPAddr
@@ -53,6 +55,7 @@ func ListenFile(rawurl string) (file *os.File, err error) {
 			return
 		}
 
+		l = net.Listener(listener)
 		// Closing the listener doesn't affect the file and reversely.
 		// http://golang.org/pkg/net/#TCPListener.File
 		file, err = listener.File()

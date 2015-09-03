@@ -1,13 +1,13 @@
 package slave
 
 import (
+	"github.com/zimbatm/socketmaster/listen"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"net"
-	"net/http"
 )
 
 type app struct {
@@ -33,7 +33,7 @@ func (a *app) serve() {
 }
 
 func (a *app) listen() error {
-	l, err := Listen(a.server.Addr)
+	_, l, err := listen.Listen(a.server.Addr)
 	if err != nil {
 		return err
 	}

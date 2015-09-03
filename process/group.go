@@ -1,4 +1,4 @@
-package main
+package process
 
 import (
 	"bufio"
@@ -10,18 +10,18 @@ import (
 	"syscall"
 )
 
-type ProcessGroup struct {
-	set *ProcessSet
+type Group struct {
+	set *Set
 	wg  sync.WaitGroup
 }
 
-func NewProcessGroup() *ProcessGroup {
-	return &ProcessGroup{
-		set: NewProcessSet(),
+func NewGroup() *Group {
+	return &Group{
+		set: NewSet(),
 	}
 }
 
-func (self *ProcessGroup) StartProcess(c *ProcessConfig) (process *os.Process, err error) {
+func (self *Group) Start(c *Config) (p *os.Process, err error) {
 	self.wg.Add(1)
 
 	ioReader, ioWriter, err := os.Pipe()
@@ -64,25 +64,25 @@ func (self *ProcessGroup) StartProcess(c *ProcessConfig) (process *os.Process, e
 		}
 	}
 
-	process, err = os.StartProcess(command, args, procAttr)
+	p, err = os.StartProcess(command, args, procAttr)
 	if err != nil {
 		return
 	}
 
 	// Add to set
-	self.set.Add(process)
+	self.set.Add(p)
 
 	// Prefix stdout and stderr lines with the [pid] and send it to the log
-	go logOutput(ioReader, process.Pid, self.wg)
+	go logOutput(ioReader, p.Pid, self.wg)
 
 	// Handle the process death
 	go func() {
-		state, err := process.Wait()
+		state, err := p.Wait()
 
-		log.Println(process.Pid, state, err)
+		log.Println(p.Pid, state, err)
 
 		// Remove from set
-		self.set.Remove(process)
+		self.set.Remove(p)
 
 		// Process is gone
 		ioReader.Close()
@@ -92,15 +92,15 @@ func (self *ProcessGroup) StartProcess(c *ProcessConfig) (process *os.Process, e
 	return
 }
 
-func (self *ProcessGroup) SignalAll(signal os.Signal, except *os.Process) {
-	self.set.Each(func(process *os.Process) {
-		if process != except {
-			process.Signal(signal)
+func (self *Group) SignalAll(signal os.Signal, except *os.Process) {
+	self.set.Each(func(p *os.Process) {
+		if p != except {
+			p.Signal(signal)
 		}
 	})
 }
 
-func (self *ProcessGroup) WaitAll() {
+func (self *Group) WaitAll() {
 	self.wg.Wait()
 }
 

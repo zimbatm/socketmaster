@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"github.com/zimbatm/socketmaster/listen"
+	"github.com/zimbatm/socketmaster/slave"
 	"log"
 	"net"
 	"net/http"
@@ -36,12 +38,12 @@ func main() {
 	flag.Parse()
 
 	// Transform fd into listener
-	listener, err := Listen(addr)
+	_, listener, err := listen.Listen(addr)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	trackerListener := NewTrackingListener(listener)
+	trackerListener := slave.NewTrackingListener(listener)
 
 	log.Println("Starting web server on", addr)
 

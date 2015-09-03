@@ -10,7 +10,7 @@ ROFFS = $(RONNS:.ronn=)
 all: socketmaster man
 
 socketmaster: *.go
-	go fmt
+	go fmt ./...
 	go build -o socketmaster
 
 %.1: %.1.ronn
