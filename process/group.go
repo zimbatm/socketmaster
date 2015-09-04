@@ -35,16 +35,11 @@ func (self *Group) Start(c *Config) (p *os.Process, err error) {
 	args := []string{c.command}
 
 	if len(c.files) > 0 {
-		// Einhorn compat
-		env = append(env, fmt.Sprintf("EINHORN_MASTER_PID=%d", os.Getpid()))
-		env = append(env, fmt.Sprintf("EINHORN_FD_COUNT=%d", len(c.files)))
-		for i, _ := range c.files {
-			env = append(env, fmt.Sprintf("EINHORN_FD_%d=%d", i, i+3))
-		}
-		// SystemD socket activation, LISTEN_PID below
+		// systemd socket activation, LISTEN_PID below
 		env = append(env, fmt.Sprintf("LISTEN_FDS=%d", len(c.files)))
 		files = append(files, c.files...)
 		command = "/bin/sh"
+		// working around the lack of fork+exec
 		args = []string{"/bin/sh", "-c", fmt.Sprintf("LISTEN_PID=$$ exec %s", c.command)}
 	}
 

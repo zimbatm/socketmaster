@@ -26,6 +26,8 @@ and can keep your file-descriptor indefinitely open.
     One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
     Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock
 
+    If none is passed the child won't get any additional sockets.
+
   * `-start`=MILLIS:
     Determines how long socketmaster waits before signaling the old process.
     If MILLIS is set to zero that feature is disabled.
@@ -42,7 +44,7 @@ and can keep your file-descriptor indefinitely open.
 On start:
 
  * socketmaster open the -listen port
- * socketmaster starts the -command with the socket on fd 3 and EINHORN_FDS=3
+ * socketmaster starts the -command with the socket on fd 3 and LISTEN_FDS=1
  * as soon as all child processes are gone, socketmaster stops as well
 
 On SIGHUP:
@@ -63,9 +65,16 @@ Your server is responsible for:
 
 ## ENVIRONMENT
 
-  * `EINHORN_FDS`:
-    This variable is set by socketmaster and passed onto the children. Its
-    value is always 3 and meant for einhorn compatibility.
+The `LISTEN_*` environment variables follow the systemd socket activation
+documentation. The child can use
+[the "sd-daemon.h" library](http://0pointer.de/blog/projects/socket-activation.html).
+
+  * `LISTEN_FDS`:
+    Number of file-descriptors passed by socketmaster. The child starts
+    counting from 3.
+  * `LISTEN_PID`:
+    The PID of the target child. If the pids don't match the child should
+    ignore the `LISTEN_FDS` environment variable.
 
 ## SIGNALS
 
