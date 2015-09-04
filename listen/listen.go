@@ -8,6 +8,8 @@ import (
 	"strconv"
 )
 
+// TODO: add option to open with SO_REUSEADDR
+
 // Utility to open a tcp[46]? sockets or a file descriptor
 func Listen(rawurl string) (file *os.File, l net.Listener, err error) {
 	u, err := url.Parse(rawurl)
