@@ -6,13 +6,30 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
-// TODO: add option to open with SO_REUSEADDR
+/**
+ * Like `net.Listen` but more flexible. Returns both the listener and the
+ * file-descriptor since the net.Listener interface doesn't allow to extract
+ * the File().
+ *
+ * Example inputs:
+ *   :8080
+ *   fd://3
+ *   tcp://:3000
+ *   tcp4://localhost:3000
+ *   tcp6://:3000
+ *   unix:///var/run/socketmaster.sock
+ *
+ * Go automatically opens ports with SO_REUSEADDR where it makes sense.
+ */
+func Listen(addr string) (file *os.File, l net.Listener, err error) {
+	if !strings.Contains(addr, "://") {
+		addr = "tcp://" + addr
+	}
 
-// Utility to open a tcp[46]? sockets or a file descriptor
-func Listen(rawurl string) (file *os.File, l net.Listener, err error) {
-	u, err := url.Parse(rawurl)
+	u, err := url.Parse(addr)
 	if err != nil {
 		return
 	}
@@ -43,7 +60,7 @@ func Listen(rawurl string) (file *os.File, l net.Listener, err error) {
 
 		l = net.Listener(listener)
 		file, err = listener.File()
-	case "tcp", "tcp4", "tcp6":
+	case "tcp", "tcp4", "tcp6", "":
 		var laddr *net.TCPAddr
 		var listener *net.TCPListener
 

@@ -20,11 +20,14 @@ socketmaster opens the socket you want to listen on and passes it onto your prog
 Defines the location of the program to execute and pass the file\-descriptor onto\. If you need to add arguments to the program, use \-\- before the command specific arguments or use a wrapper script\.
 .
 .IP
-e\.g\. socketmaster \-command \fIcommand\fR \-\- \-arg1 \-arg2
+e\.g\. socketmaster \-command \fIcommand\fR
 .
 .TP
-\fB\-listen\fR=URI
-One of the following schemes are accepted: tcp, tcp4, tcp6 and unix\. Example: tcp4://localhost:8945 or unix:///tmp/myapp\.sock
+\fB\-listen\fR=ADDR
+Depending on the number of times it\'s passed the child will get 0\-N sockets\.
+.
+.IP
+Examples: :8080 fd://3 tcp://:8945 tcp4://localhost:8945 tcp6://localhost:8945 unix:///tmp/myapp\.sock
 .
 .TP
 \fB\-start\fR=MILLIS
@@ -45,7 +48,7 @@ On start:
 socketmaster open the \-listen port
 .
 .IP "\(bu" 4
-socketmaster starts the \-command with the socket on fd 3 and EINHORN_FDS=3
+socketmaster starts the \-command with the socket on fd 3 and LISTEN_FDS=1
 .
 .IP "\(bu" 4
 as soon as all child processes are gone, socketmaster stops as well
@@ -84,10 +87,15 @@ gracefully shutdown on SIGTERM (close the listener, wait for the child connectio
 .IP "" 0
 .
 .SH "ENVIRONMENT"
+The \fBLISTEN_*\fR environment variables follow the systemd socket activation documentation\. The child can use the "sd\-daemon\.h" library \fIhttp://0pointer\.de/blog/projects/socket\-activation\.html\fR\.
 .
 .TP
-\fBEINHORN_FDS\fR
-This variable is set by socketmaster and passed onto the children\. Its value is always 3 and meant for einhorn compatibility\.
+\fBLISTEN_FDS\fR
+Number of file\-descriptors passed by socketmaster\. The child starts counting from 3\.
+.
+.TP
+\fBLISTEN_PID\fR
+The PID of the target child\. If the pids don\'t match the child should ignore the \fBLISTEN_FDS\fR environment variable\.
 .
 .SH "SIGNALS"
 On SIGHUP, socketmaster starts a new child process, waits for \-start and sends a HUP to the old process\.
@@ -124,7 +132,7 @@ upstart \fIhttp://upstart\.ubuntu\.com/\fR is an init system / process manager\.
 Bug reports and other contributions are welcome! The project\'s source and issue tracker is located at \fIhttps://github\.com/zimbatm/socketmaster/\fR
 .
 .SH "COPYRIGHT"
-socketmaster is Copyright (C) 2012 PandaStream \fIhttp://pandastream\.com\fR
+socketmaster is Copyright (C) 2012 PandaStream \fIhttp://pandastream\.com\fR socketmaster is Copyright (C) 2015 zimbatm \fIhttp://zimbatm\.com\fR
 .
 .P
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:

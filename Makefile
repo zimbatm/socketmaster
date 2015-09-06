@@ -9,7 +9,7 @@ ROFFS = $(RONNS:.ronn=)
 .PHONY: all man install html gh-pages
 all: socketmaster man
 
-socketmaster: *.go
+socketmaster: *.go */*.go
 	go fmt ./...
 	go build -o socketmaster
 

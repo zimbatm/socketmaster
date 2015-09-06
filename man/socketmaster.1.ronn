@@ -20,13 +20,19 @@ and can keep your file-descriptor indefinitely open.
     arguments or use a wrapper script.
 
     e.g.
-    socketmaster -command <command> -- -arg1 -arg2
+    socketmaster -command <command>
 
-  * `-listen`=URI:
-    One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
-    Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock
+  * `-listen`=ADDR:
+    Depending on the number of times it's passed the child will get 0-N
+    sockets.
 
-    If none is passed the child won't get any additional sockets.
+    Examples:
+      :8080
+      fd://3
+      tcp://:8945
+      tcp4://localhost:8945
+      tcp6://localhost:8945
+      unix:///tmp/myapp.sock
 
   * `-start`=MILLIS:
     Determines how long socketmaster waits before signaling the old process.
@@ -106,6 +112,7 @@ The project's source and issue tracker is located at
 ## COPYRIGHT
 
 socketmaster is Copyright (C) 2012 PandaStream <http://pandastream.com>
+socketmaster is Copyright (C) 2015 zimbatm <http://zimbatm.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the

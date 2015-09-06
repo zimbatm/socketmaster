@@ -45,7 +45,7 @@ func handleSignals(group *process.Group, config *process.Config, c <-chan os.Sig
 
 func main() {
 	var (
-		addr      string
+		addr      *listen.Value = listen.NewValue()
 		command   string
 		err       error
 		startTime int
@@ -54,7 +54,7 @@ func main() {
 	)
 
 	flag.StringVar(&command, "command", "", "Program to start")
-	flag.StringVar(&addr, "listen", "", "Port on which to bind (eg: tcp://:8080)")
+	flag.Var(addr, "listen", "Port on which to bind (eg: :8080). Can be invoked multiple times.")
 	flag.IntVar(&startTime, "start", 3000, "How long the new process takes to boot in millis")
 	flag.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
 	flag.StringVar(&username, "user", "", "run the command as this user")
@@ -82,16 +82,6 @@ func main() {
 		log.Fatalln("Could not find executable", err)
 	}
 
-	var files []*os.File
-	if addr != "" {
-		sockfile, _, err := listen.Listen(addr)
-		if err != nil {
-			log.Fatalln("Unable to open socket", addr, err)
-		}
-		log.Println("Listening on", addr)
-		files = []*os.File{sockfile}
-	}
-
 	var targetUser *user.User
 	if username != "" {
 		targetUser, err = user.Lookup(username)
@@ -100,7 +90,9 @@ func main() {
 		}
 	}
 
-	config := process.NewConfig(command, files, targetUser)
+	log.Printf("Listening on %s", addr.String())
+
+	config := process.NewConfig(command, addr.Value(), targetUser)
 
 	// Run the first process
 	group := process.NewGroup()
