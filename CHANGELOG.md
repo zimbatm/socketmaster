@@ -1,4 +1,14 @@
 
+2.0.0 / 2015-09-06
+==================
+
+  * BREAK: Drop einhorn compatibility. They changed everything.
+  * NEW: Adopt systemd socket-activation `LISTEN_FDS` and `LISTEN_PID`
+         environment variables.
+  * NEW: -listen can be called multiple times
+  * NEW: -listen accepts the stdlib `:8080` format
+  * NEW: socketmaster/slave interface for clients. Thanks @vivienschilis
+
 1.0.57 / 2015-04-11
 ===================
 
