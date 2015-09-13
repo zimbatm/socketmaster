@@ -1,7 +1,12 @@
-#!/bin/sh
+#!/bin/sh -e
 
 cd "$(dirname "$0")"/..
 
 make
 
-./socketmaster -command=./examples/go-wrappper -listen=tcp://:8090
+./socketmaster \
+  -cmd=./examples/go-wrappper \
+  -start=1000 \
+  -stop=3000 \
+  -listen=tcp://:8090 \
+  -listen=tcp://:8093

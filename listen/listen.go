@@ -42,7 +42,7 @@ func Listen(addr string) (file *os.File, l net.Listener, err error) {
 			return
 		}
 		// NOTE: The name argument doesn't really matter apparently
-		file = os.NewFile(uintptr(fd), fmt.Sprintf("fd://%d", fd))
+		file = os.NewFile(uintptr(fd), addr)
 		l, err = net.FileListener(file)
 	case "unix": //, "unixpacket", "unixgram":
 		var laddr *net.UnixAddr

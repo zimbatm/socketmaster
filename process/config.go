@@ -1,16 +1,18 @@
 package process
 
 import (
+	"net"
 	"os"
 	"os/user"
+	"time"
 )
 
 type Config struct {
-	command string
-	files   []*os.File
-	user    *user.User
-}
-
-func NewConfig(command string, files []*os.File, u *user.User) *Config {
-	return &Config{command, files, u}
+	Command      string
+	Dir          string
+	Files        []*os.File
+	NotifyConn   *net.UnixConn
+	StartTimeout time.Duration
+	StopTimeout  time.Duration
+	User         *user.User
 }
