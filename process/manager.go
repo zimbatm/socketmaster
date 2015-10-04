@@ -69,7 +69,7 @@ func (m *Manager) run(c *Config, logger *log.Logger, signals chan os.Signal, man
 	}
 
 	changeState := func(newState ManagerState) {
-		logger.Printf("manager={state=%v} new_state=%s", state, newState)
+		logger.Printf("manager={state=%s}", newState)
 
 		switch newState {
 		case MANAGER_RUNNING:
@@ -87,16 +87,16 @@ func (m *Manager) run(c *Config, logger *log.Logger, signals chan os.Signal, man
 	for {
 		if state == MANAGER_STOPPING {
 			if set.Empty() {
-				logger.Printf("manager={state=%v} msg=Bye", state)
+				logger.Printf("manager={state=%s} msg=Bye", state)
 				return
 			} else {
-				logger.Printf("manager={state=%v} remaining=[%v]", state, set.ToList())
+				logger.Printf("manager={state=%s} remaining=%v", state, set.ToList())
 			}
 		}
 
 		select {
 		case signal := <-signals:
-			logger.Printf("manager={state=%v} signal=%v", state, signal)
+			logger.Printf("manager={state=%s} signal=%v", state, signal)
 			sig := signal.(syscall.Signal)
 			switch sig {
 			case syscall.SIGTERM, syscall.SIGINT:
@@ -110,21 +110,22 @@ func (m *Manager) run(c *Config, logger *log.Logger, signals chan os.Signal, man
 						changeState(MANAGER_STOPPING)
 					}
 				} else {
-					logger.Println("manager={state=%v} msg='Cannot reload'", state)
+					logger.Println("manager={state=%s} msg='Cannot reload'", state)
 				}
-
-			default:
-				// Forward all other signals to the current process
+			case syscall.SIGUSR1, syscall.SIGUSR2:
+				// Forward signals to the current process
 				if current != nil {
 					current.Signal(signal)
 				}
+			default:
+				// Just ignore
 			}
 		case pid := <-readyChan:
 			if current != nil && current.Pid == pid {
 				current.NotifyReady()
 			}
 		case e := <-events:
-			logger.Printf("manager={state=%v} event={%v}", state, e)
+			logger.Printf("manager={state=%s} event={%v}", state, e)
 
 			switch e.State {
 			case PROCESS_READY:
@@ -134,12 +135,12 @@ func (m *Manager) run(c *Config, logger *log.Logger, signals chan os.Signal, man
 				if e.Process == current {
 					set.Each(func(p *Process) {
 						// There should be at most one here
-						if p != e.Process {
+						if p != current {
 							p.Shutdown()
 						}
 					})
 				} else {
-					logger.Printf("manager={state=%v} msg='Unexpected event'")
+					logger.Printf("manager={state=%s} msg='Unexpected event'")
 				}
 			case PROCESS_STOPPING:
 				if current == e.Process {
@@ -152,7 +153,7 @@ func (m *Manager) run(c *Config, logger *log.Logger, signals chan os.Signal, man
 					changeState(MANAGER_STOPPING)
 				}
 			default:
-				logger.Fatalf("manager={state=%v} msg='Unexpected event' event={%v}", state, e)
+				logger.Fatalf("manager={state=%s} msg='Unexpected event' event={%v}", state, e)
 			}
 		}
 	}

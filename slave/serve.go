@@ -43,14 +43,11 @@ func (a *app) listen() error {
 }
 
 func (a *app) signalHandler() {
-
 	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
-	go func(c chan os.Signal, listener net.Listener) {
-		<-c
-		log.Println("Closing listener")
-		listener.Close()
-	}(c, a.listener)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	<-c
+	log.Println("Closing listener")
+	listener.Close()
 }
 
 func Serve(server *http.Server) error {
@@ -61,7 +58,7 @@ func Serve(server *http.Server) error {
 		return err
 	}
 
-	a.signalHandler()
+	go a.signalHandler()
 
 	// Start serving.
 	a.serve()

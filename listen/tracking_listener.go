@@ -1,4 +1,4 @@
-package slave
+package listen
 
 import (
 	"net"
@@ -11,13 +11,16 @@ type trackedConn struct {
 	once     sync.Once
 }
 
-// TODO: Is Close called even if it's the client who closed the connection ?
 func (self *trackedConn) Close() error {
-	// Make sure Done() is not called twice here
+	// Makes sure Done() is not called twice here
 	self.once.Do(func() { self.listener.wg.Done() })
 	return self.Conn.Close()
 }
 
+/**
+ * Keeps track of active connections. The WaitForChildren() function
+ * can be used to only return when all child connections have been closed.
+ */
 type TrackingListener struct {
 	net.Listener
 	wg sync.WaitGroup
@@ -29,21 +32,21 @@ func NewTrackingListener(listener net.Listener) *TrackingListener {
 	}
 }
 
-func (self *TrackingListener) Accept() (net.Conn, error) {
+func (self *TrackingListener) Accept() (conn net.Conn, err error) {
 	self.wg.Add(1)
 
-	conn, err := self.Listener.Accept()
+	conn, err = self.Listener.Accept()
 	if err != nil {
 		self.wg.Done()
 		return nil, err
 	}
 
-	conn2 := &trackedConn{
+	conn = &trackedConn{
 		Conn:     conn,
 		listener: self,
 	}
 
-	return conn2, nil
+	return
 }
 
 func (self *TrackingListener) WaitForChildren() {

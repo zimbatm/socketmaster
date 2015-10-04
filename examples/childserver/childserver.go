@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/zimbatm/socketmaster/listen"
-	"github.com/zimbatm/socketmaster/slave"
 	"log"
 	"net"
 	"net/http"
@@ -22,6 +21,7 @@ func (*SleepyHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	time.Sleep(time.Duration(10) * time.Second)
 	log.Println("After sleep")
 	res.WriteHeader(200)
+	res.Write([]byte("Hi\n"))
 }
 
 func init() {
@@ -38,17 +38,23 @@ func main() {
 	flag.Parse()
 
 	// Transform fd into listener
-	_, listener, err := listen.Listen(addr)
+	fs, err := listen.ListenFiles([]string{addr})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	trackerListener := slave.NewTrackingListener(listener)
+	listener, err := net.FileListener(fs[0])
+	if err != nil {
+		log.Fatalln(err)
+	}
+	f.Close()
+
+	trackerListener := listen.NewTrackingListener(listener)
 
 	log.Println("Starting web server on", addr)
 
 	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	go func(c chan os.Signal, listener net.Listener) {
 		for {
 			<-c // os.Signal
@@ -57,9 +63,9 @@ func main() {
 		}
 	}(c, trackerListener)
 
-	server.Serve(trackerListener)
+	err = server.Serve(trackerListener)
 
-	log.Println("Waiting for children to close")
+	log.Println("Waiting for children to close", err)
 
 	trackerListener.WaitForChildren()
 

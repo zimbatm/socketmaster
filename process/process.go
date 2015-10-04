@@ -56,6 +56,7 @@ func StartProcess(c *Config, logger *log.Logger, events chan<- Event) (p *Proces
 
 	// TODO: replace os.Stdin with /dev/null
 	ps, err := createProcess(c, os.Stdin, ioWriter, ioWriter)
+	ioWriter.Close() // Only the child has it now
 	if err != nil {
 		return
 	}
@@ -93,9 +94,9 @@ func StartProcess(c *Config, logger *log.Logger, events chan<- Event) (p *Proces
 		// change state and emits back to the manager
 		emit := func(newState ProcessState, newErr error) {
 			if newErr == nil {
-				logger.Printf("process={%v state=%s} new_state=%s", p, state, newState)
+				logger.Printf("process={%v state=%s}", p, newState)
 			} else {
-				logger.Printf("process={%v state=%s} new_state=%s err=%v", p, state, newState, newErr)
+				logger.Printf("process={%v state=%s} err=%v", p, newState, newErr)
 			}
 
 			state = newState
@@ -126,7 +127,6 @@ func StartProcess(c *Config, logger *log.Logger, events chan<- Event) (p *Proces
 					emit(PROCESS_READY, err)
 				}
 			case err = <-died:
-				logger.Printf("process={%v state=%s} msg='Process died' err=%v", p, state, err)
 				emit(PROCESS_DIED, err)
 				return
 			case <-startTimeout:

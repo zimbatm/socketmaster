@@ -6,7 +6,7 @@ make
 
 ./socketmaster \
   -cmd=./examples/go-wrappper \
-  -start=1000 \
+  -start=2000 \
   -stop=3000 \
   -listen=tcp://:8090 \
   -listen=tcp://:8093

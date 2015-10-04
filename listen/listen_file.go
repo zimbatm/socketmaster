@@ -10,11 +10,12 @@ import (
 )
 
 /**
- * Like `net.Listen` but more flexible. Returns both the listener and the
- * file-descriptor since the net.Listener interface doesn't allow to extract
- * the File().
+ * Like `net.Listen` but more flexible and returns a File.
+ * The user can then wrap the listener with:
  *
- * Example inputs:
+ *     l, err = net.FileListener(file)
+ *
+ * Example of allowed add syntax:
  *   :8080
  *   fd://3
  *   tcp://:3000
@@ -24,7 +25,7 @@ import (
  *
  * Go automatically opens ports with SO_REUSEADDR where it makes sense.
  */
-func Listen(addr string) (file *os.File, l net.Listener, err error) {
+func ListenFile(addr string) (file *os.File, err error) {
 	if !strings.Contains(addr, "://") {
 		addr = "tcp://" + addr
 	}
@@ -43,7 +44,6 @@ func Listen(addr string) (file *os.File, l net.Listener, err error) {
 		}
 		// NOTE: The name argument doesn't really matter apparently
 		file = os.NewFile(uintptr(fd), addr)
-		l, err = net.FileListener(file)
 	case "unix": //, "unixpacket", "unixgram":
 		var laddr *net.UnixAddr
 		var listener *net.UnixListener
@@ -58,7 +58,6 @@ func Listen(addr string) (file *os.File, l net.Listener, err error) {
 			return
 		}
 
-		l = net.Listener(listener)
 		file, err = listener.File()
 	case "tcp", "tcp4", "tcp6", "":
 		var laddr *net.TCPAddr
@@ -74,7 +73,6 @@ func Listen(addr string) (file *os.File, l net.Listener, err error) {
 			return
 		}
 
-		l = net.Listener(listener)
 		// Closing the listener doesn't affect the file and reversely.
 		// http://golang.org/pkg/net/#TCPListener.File
 		file, err = listener.File()

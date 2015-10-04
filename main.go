@@ -22,9 +22,10 @@ const PROGRAM_NAME = "socketmaster"
 func main() {
 	var (
 		command      string
+		args         []string
 		dir          string
 		err          error
-		listen_      *StrValues = NewStrValues()
+		addrs        *StrValues = NewStrValues()
 		logger       *log.Logger
 		notifyAddr   string
 		startTimeout int
@@ -33,15 +34,19 @@ func main() {
 		username     string
 	)
 
-	flag.StringVar(&command, "cmd", "", "Program to start")
-	flag.StringVar(&dir, "dir", "", "Work directory of the command")
-	flag.Var(listen_, "listen", "Port on which to bind (eg: :8080). Can be invoked multiple times.")
-	flag.StringVar(&notifyAddr, "notify", "", "Path to the notification socket.")
-	flag.IntVar(&startTimeout, "start", 0, "Maximum time for the new process to boot (millis)")
-	flag.IntVar(&stopTimeout, "stop", 0, "Maximum time for the old processes to stop (millis)")
-	flag.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
-	flag.StringVar(&username, "user", "", "run the command as this user")
-	flag.Parse()
+	f := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	f.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s [OPTIONS] <COMMAND>:\n", os.Args[0])
+		f.PrintDefaults()
+	}
+	f.StringVar(&dir, "dir", "", "Work directory of the command")
+	f.Var(addrs, "listen", "Port on which to bind (eg: :8080). Can be invoked multiple times.")
+	f.StringVar(&notifyAddr, "notify", "", "Path to the notification socket.")
+	f.IntVar(&startTimeout, "start", 0, "Maximum time for the new process to boot (millis)")
+	f.IntVar(&stopTimeout, "stop", 0, "Maximum time for the old processes to stop (millis)")
+	f.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
+	f.StringVar(&username, "user", "", "run the command as this user")
+	f.Parse(os.Args[1:])
 
 	if useSyslog {
 		stream, err := syslog.New(syslog.LOG_INFO, PROGRAM_NAME)
@@ -51,12 +56,14 @@ func main() {
 		logger = log.New(stream, "", 0)
 	} else {
 		prefix := fmt.Sprintf("%s[%d] ", PROGRAM_NAME, syscall.Getpid())
-		logger = log.New(os.Stdout, prefix, log.Ldate|log.Ltime)
+		logger = log.New(os.Stdout, prefix, log.LstdFlags)
 	}
 
-	if command == "" {
-		logger.Fatalln("Missing command path")
+	args = f.Args()
+	if len(args) == 0 {
+		logger.Fatalln("Missing command")
 	}
+	command = args[0]
 
 	if command, err = exec.LookPath(command); err != nil {
 		logger.Fatalln("Could not find executable", err)
@@ -70,20 +77,11 @@ func main() {
 		}
 	}
 
-	files := sd_daemon.ListenFds(true)
-	if files != nil && len(files) > 0 {
-		logger.Printf("Inherited %d files", len(files))
-	} else {
-		addrs := listen_.Value()
-		files = make([]*os.File, len(addrs))
-		for i, addr := range addrs {
-			logger.Printf("Listening on %s", addr)
-			file, _, err := listen.Listen(addr)
-			if err != nil {
-				logger.Fatal(err)
-			}
-			files[i] = file
-		}
+	files, err := listen.ListenFiles(addrs.Value())
+	if err != nil {
+		logger.Fatal(err)
+	} else if len(files) > 0 {
+		logger.Printf("Listening on %v", files)
 	}
 
 	var notifyConn *net.UnixConn
