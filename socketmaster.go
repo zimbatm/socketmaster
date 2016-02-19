@@ -54,7 +54,6 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 				if startTime > 0 {
 					time.Sleep(time.Duration(startTime) * time.Millisecond)
 				}
-
 				// childReadySignal == 0 means socketmaster do not need to wait for child ready
 				if childReadySignal == syscall.Signal(0) {
 					// A possible improvement woud be to only swap the
@@ -69,6 +68,9 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 				params := cachedSignals[0]
 				cachedSignals = cachedSignals[1:]
 				processGroup.SignalAll(params.signal, processGroup.LastProcess)
+				// A possible improvement woud be to only swap the
+				// process if the new child is still alive.
+				//processGroup.SignalAll(syscall.SIGTERM, process)
 			}
 		default:
 			// Forward signal

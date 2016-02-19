@@ -16,8 +16,12 @@ and can keep your file-descriptor indefinitely open.
 
   * `-command`=PATH:
     Defines the location of the program to execute and pass the file-descriptor
-    onto. If you need to add arguments to the program use a wrapper script.
-  
+    onto. If you need to add arguments to the program, use -- before the command specific
+    arguments or use a wrapper script.
+
+    e.g.
+    socketmaster -command <command> -- -arg1 -arg2
+
   * `-listen`=URI:
     One of the following schemes are accepted: tcp, tcp4, tcp6 and unix.
     Example: tcp4://localhost:8945 or unix:///tmp/myapp.sock
@@ -45,13 +49,13 @@ On SIGHUP:
 
  * socketmaster starts a new -command
  * waits for -start milliseconds
- * sends a SIGHUP to the other child processes
+ * sends a SIGTERM to the other child processes
 
 Your server is responsible for:
 
  * opening the socket passed on fd 3
  * not crashing
- * gracefully shutdown on SIGHUP (close the listener, wait for the child
+ * gracefully shutdown on SIGTERM (close the listener, wait for the child
    connections to close)
 
 ## ENVIRONMENT
@@ -69,6 +73,8 @@ SIGINT, SIGTERM and SIGQUIT are forwarded to the child processes.
 
 ## RELATED PROJECTS
 
+  * [crank](https://github.com/pusher/crank) is the child of socketmaster. It
+    supports controlled rolling restarts and dynamic config.
   * [einhorn](https://github.com/stripe/einhorn) is a project with the same goals,
     a wider feature-set and written in ruby.
   * [libancillary](http://www.normalesup.org/~george/comp/libancillary/)

@@ -1,5 +1,13 @@
 
-1.0.40 / 2013-06-18 
+1.0.57 / 2015-04-11
+===================
+
+  * CHANGE: HUP to TERM for shutting down clients. Thanks @qzaidi
+  * NEW: allow to pass command-line arguments to the running script. Thanks @qzaidi
+  * FIX: Avoid double [pid] tags on the syslog output
+  * Doc typos and grammar, thanks @nikai3d and @patrickberkeley
+
+1.0.40 / 2013-06-18
 ==================
 
   * Build socketmaster with go v1.1.1 - Fixes weird issues with shared fds.
