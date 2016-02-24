@@ -130,6 +130,12 @@ func ListenAndServe(handler http.Handler, trackerListener *TrackingListener) (er
 	return
 }
 
+// ListenAndServe, exits the process when the trackerListener is closed
+func ListenAndServeWithExit(handler http.Handler, trackerListener *TrackingListener) (err error) {
+	ListenAndServe(handler, trackerListener)
+	os.Exit(0)
+}
+
 func GetSocketMasterProcess() *os.Process {
 	smPid := os.Getenv("SOCKETMASTER_PID")
 	if smPid == "" {
