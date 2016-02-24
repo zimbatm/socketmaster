@@ -77,14 +77,27 @@ func GetTrackingListener() (*TrackingListener, error) {
 }
 
 func SetupSignalHandling(trackerListener *TrackingListener) {
-	c := make(chan os.Signal)
+	f := func() {
+		log.Println("Closing listener")
+		if err := trackerListener.Close(); err != nil {
+			log.Printf("error closing trackerListener: %v\n", err)
+		}
+	}
+	handleSignal(f)
+}
+
+func SetupProcessTerminationHandling() {
+	handleSignal(func() { os.Exit(0) })
+}
+
+func handleSignal(f func()) {
+	c := make(chan os.Signal, 10)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGUSR2)
 	go func() {
 		for {
 			sig := <-c // os.Signal
 			log.Printf("socketchild captured %v\n", sig)
-			log.Println("Closing listener")
-			trackerListener.Close()
+			f()
 		}
 	}()
 }

@@ -155,7 +155,7 @@ func main() {
 	// Monitoring the processes
 	// NOTE: add buffer because `handleSignals` is not fast enough
 	// TODO: rewrite `handleSignals` so signals will not be lost
-	c := make(chan os.Signal, 1)
+	c := make(chan os.Signal, 10)
 	signals := []os.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGUSR2}
 	if childReadySignal != syscall.Signal(0) {
 		signals = append(signals, childReadySignal)
