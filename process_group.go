@@ -2,10 +2,11 @@ package main
 
 import (
 	"bufio"
-	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/user"
+	"path"
 	"strconv"
 	"sync"
 	"syscall"
@@ -18,6 +19,7 @@ type ProcessGroup struct {
 	commandPath string
 	sockfile    *os.File
 	user        *user.User
+	LastProcess *os.Process
 }
 
 type processSet struct {
@@ -34,7 +36,7 @@ func MakeProcessGroup(commandPath string, sockfile *os.File, u *user.User) *Proc
 	}
 }
 
-func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
+func (self *ProcessGroup) StartProcess(childReadySignal syscall.Signal) (process *os.Process, err error) {
 	self.wg.Add(1)
 
 	ioReader, ioWriter, err := os.Pipe()
@@ -42,7 +44,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		return nil, err
 	}
 
-	env := append(os.Environ(), "EINHORN_FDS=3")
+	env := append(os.Environ(), "EINHORN_FDS=3", fmt.Sprintf("SOCKETMASTER_PID=%d", os.Getpid()), fmt.Sprintf("CHILD_READY_SIGNAL=%d", childReadySignal))
 
 	procAttr := &os.ProcAttr{
 		Env:   env,
@@ -60,15 +62,19 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		}
 	}
 
-	args := append([]string{self.commandPath}, flag.Args()...)
-	log.Println("Starting", self.commandPath, args)
-	process, err = os.StartProcess(self.commandPath, args, procAttr)
+	if err := os.Chdir(WorkingDir); err != nil {
+		log.Fatalln("Could not change dir", err, WorkingDir)
+	}
+
+	log.Println("Starting", self.commandPath)
+	process, err = os.StartProcess(self.commandPath, []string{path.Base(self.commandPath)}, procAttr)
 	if err != nil {
 		return
 	}
 
 	// Add to set
 	self.set.Add(process)
+	self.LastProcess = process
 
 	// Prefix stdout and stderr lines with the [pid] and send it to the log
 	go logOutput(ioReader, process.Pid, self.wg)
