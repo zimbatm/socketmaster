@@ -134,6 +134,7 @@ func ListenAndServe(handler http.Handler, trackerListener *TrackingListener) (er
 func ListenAndServeWithExit(handler http.Handler, trackerListener *TrackingListener) (err error) {
 	ListenAndServe(handler, trackerListener)
 	os.Exit(0)
+	return
 }
 
 func GetSocketMasterProcess() *os.Process {
