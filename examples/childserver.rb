@@ -17,7 +17,7 @@ class SlowServer
   end
 
   def start
-    while true
+    loop do
       Thread.new(@server.accept) do |client|
         @tg.add Thread.current
         Thread.current[:client] = client
