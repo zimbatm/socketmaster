@@ -131,6 +131,12 @@ func (self *processSet) Remove(process *os.Process) {
 	delete(self.set, process)
 }
 
+func (self *processSet) Len() int {
+	self.Lock()
+	defer self.Unlock()
+	return len(self.set)
+}
+
 func logOutput(input *os.File, pid int, wg sync.WaitGroup) {
 	var err error
 	var line string
