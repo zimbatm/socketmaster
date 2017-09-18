@@ -1,10 +1,12 @@
 package slave
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"net"
 	"net/http"
@@ -12,7 +14,7 @@ import (
 
 type app struct {
 	server   *http.Server
-	listener *TrackingListener
+	listener net.Listener
 }
 
 func newApp(server *http.Server) *app {
@@ -22,10 +24,6 @@ func newApp(server *http.Server) *app {
 }
 func (a *app) Listener() net.Listener {
 	return a.listener
-}
-
-func (a *app) wait() {
-	a.listener.WaitForChildren()
 }
 
 func (a *app) serve() {
@@ -38,22 +36,25 @@ func (a *app) listen() error {
 		return err
 	}
 
-	a.listener = NewTrackingListener(l)
+	a.listener = l
 	return nil
 }
 
-func (a *app) signalHandler() {
-
+func (a *app) signalHandler(d time.Duration) {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
-	go func(c chan os.Signal, listener net.Listener) {
+	go func() {
 		<-c
-		log.Println("Closing listener")
-		listener.Close()
-	}(c, a.listener)
+		ctx, cancel := context.WithTimeout(context.Background(), d)
+		defer cancel()
+
+		log.Println("Shutting down gracefully the server")
+		a.server.Shutdown(ctx)
+		log.Println("The server did shut down")
+	}()
 }
 
-func Serve(server *http.Server) error {
+func Serve(server *http.Server, timeout time.Duration) error {
 	a := newApp(server)
 
 	// Acquire Listeners
@@ -61,14 +62,10 @@ func Serve(server *http.Server) error {
 		return err
 	}
 
-	a.signalHandler()
+	a.signalHandler(timeout)
 
 	// Start serving.
 	a.serve()
-
-	log.Println("Waiting for children to close")
-
-	a.wait()
 
 	return nil
 }

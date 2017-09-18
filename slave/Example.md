@@ -31,7 +31,7 @@ func main() {
 		Handler: new(SleepyHandler),
 	}
 
-	slave.Serve(server)
+	slave.Serve(server, 5 * time.Minute)
 
 	log.Println("Bye bye")
 }
