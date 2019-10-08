@@ -71,7 +71,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	self.set.Add(process)
 
 	// Prefix stdout and stderr lines with the [pid] and send it to the log
-	go logOutput(ioReader, process.Pid, self.wg)
+	logOutput(ioReader, process.Pid, self.wg)
 
 	// Handle the process death
 	go func() {
@@ -138,18 +138,22 @@ func (self *processSet) Len() int {
 }
 
 func logOutput(input *os.File, pid int, wg sync.WaitGroup) {
-	var err error
-	var line string
 	wg.Add(1)
 
-	reader := bufio.NewReader(input)
+	go func() {
+		defer wg.Done()
 
-	for err == nil {
-		line, err = reader.ReadString('\n')
-		if line != "" {
-			log.Printf("[%d] %s", pid, line)
+		var (
+			err    error
+			line   string
+			reader = bufio.NewReader(input)
+		)
+
+		for err == nil {
+			line, err = reader.ReadString('\n')
+			if line != "" {
+				log.Printf("[%d] %s", pid, line)
+			}
 		}
-	}
-
-	wg.Done()
+	}()
 }
