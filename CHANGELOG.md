@@ -1,4 +1,18 @@
 
+1.0.69 / 2019-10-09
+==================
+
+  * FIX: call wg.Add(1) synchronously (#15)
+  * Since golang 1.8 server supports gracefull shutdown of the server (#14)
+  * Merge pull request #13 from alileza/master
+  * improvement swap child if the new one is still alive
+  * Fix style
+  * Merge pull request #9 from vivienschilis/feature-simple-http-server
+  * Rename to slave
+  * return after first signal
+  * Add example server
+  * Simple server to use
+
 1.0.57 / 2015-04-11
 ===================
 
