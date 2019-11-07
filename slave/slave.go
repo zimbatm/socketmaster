@@ -3,69 +3,87 @@ package slave
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"net"
-	"net/http"
+	"google.golang.org/grpc"
 )
 
-type app struct {
-	server   *http.Server
-	listener net.Listener
+type httpAPP struct {
+	server *http.Server
 }
 
-func newApp(server *http.Server) *app {
-	return &app{
-		server: server,
+func (a *httpAPP) ShutdownFunc(timeout time.Duration) func() {
+	return func() {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		a.server.Shutdown(ctx)
 	}
 }
-func (a *app) Listener() net.Listener {
-	return a.listener
+
+type grpcAPP struct {
+	server *grpc.Server
 }
 
-func (a *app) serve() {
-	a.server.Serve(a.listener)
+func (a *grpcAPP) ShutdownFunc(timeout time.Duration) func() {
+	return func() {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		stopped := make(chan struct{})
+		go func() {
+			a.server.GracefulStop()
+			close(stopped)
+		}()
+
+		select {
+		case <-ctx.Done():
+		case <-stopped:
+		}
+	}
 }
 
-func (a *app) listen() error {
-	l, err := Listen(a.server.Addr)
+func ServeHTTP(server *http.Server, address string, timeout time.Duration) error {
+	server.Addr = address
+
+	app := &httpAPP{server: server}
+
+	l, err := Listen(server.Addr)
 	if err != nil {
 		return err
 	}
 
-	a.listener = l
-	return nil
+	signalHandler(app.ShutdownFunc(timeout))
+
+	// Start serving.
+	return app.server.Serve(l)
 }
 
-func (a *app) signalHandler(d time.Duration) {
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
-	go func() {
-		<-c
-		ctx, cancel := context.WithTimeout(context.Background(), d)
-		defer cancel()
+func ServeGRPC(server *grpc.Server, address string, timeout time.Duration) error {
+	app := &grpcAPP{server: server}
 
-		log.Println("Shutting down gracefully the server")
-		a.server.Shutdown(ctx)
-		log.Println("The server did shut down")
-	}()
-}
-
-func Serve(server *http.Server, timeout time.Duration) error {
-	a := newApp(server)
-
-	// Acquire Listeners
-	if err := a.listen(); err != nil {
+	l, err := Listen(address)
+	if err != nil {
 		return err
 	}
 
-	a.signalHandler(timeout)
+	signalHandler(app.ShutdownFunc(timeout))
 
 	// Start serving.
-	a.serve()
+	return app.server.Serve(l)
+}
 
-	return nil
+func signalHandler(shutdownFn func()) {
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
+
+	go func() {
+		<-c
+		log.Println("Shutting down gracefully the server")
+		shutdownFn()
+		log.Println("The server did shut down")
+	}()
 }
