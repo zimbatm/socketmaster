@@ -3,69 +3,66 @@ package slave
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"net"
-	"net/http"
+	"google.golang.org/grpc"
 )
 
-type app struct {
-	server   *http.Server
-	listener net.Listener
-}
-
-func newApp(server *http.Server) *app {
-	return &app{
-		server: server,
-	}
-}
-func (a *app) Listener() net.Listener {
-	return a.listener
-}
-
-func (a *app) serve() {
-	a.server.Serve(a.listener)
-}
-
-func (a *app) listen() error {
-	l, err := Listen(a.server.Addr)
+func ListenAndServeHTTP(server *http.Server, address string, timeout time.Duration) error {
+	l, err := Listen(address)
 	if err != nil {
 		return err
 	}
 
-	a.listener = l
-	return nil
-}
-
-func (a *app) signalHandler(d time.Duration) {
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
-	go func() {
-		<-c
-		ctx, cancel := context.WithTimeout(context.Background(), d)
+	signalHandler(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
+		server.Shutdown(ctx)
+	})
 
-		log.Println("Shutting down gracefully the server")
-		a.server.Shutdown(ctx)
-		log.Println("The server did shut down")
-	}()
+	// Start serving.
+	server.Addr = address
+	return server.Serve(l)
 }
 
-func Serve(server *http.Server, timeout time.Duration) error {
-	a := newApp(server)
-
-	// Acquire Listeners
-	if err := a.listen(); err != nil {
+func ListenAndServeGRPC(server *grpc.Server, address string, timeout time.Duration) error {
+	l, err := Listen(address)
+	if err != nil {
 		return err
 	}
 
-	a.signalHandler(timeout)
+	signalHandler(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		stopped := make(chan struct{})
+		go func() {
+			server.GracefulStop()
+			close(stopped)
+		}()
+
+		select {
+		case <-ctx.Done():
+		case <-stopped:
+		}
+	})
 
 	// Start serving.
-	a.serve()
+	return server.Serve(l)
+}
 
-	return nil
+func signalHandler(callbackFn func()) {
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
+
+	go func() {
+		<-c
+		log.Println("Shutting down gracefully the server")
+		callbackFn()
+		log.Println("The server did shut down")
+	}()
 }
