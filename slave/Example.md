@@ -30,7 +30,7 @@ func main() {
 		Handler: new(SleepyHandler),
 	}
 
-	slave.ServeHTTP(server, addr, 5 * time.Minute)
+	slave.ListenAndServeHTTP(server, addr, 5 * time.Minute)
 
 	log.Println("Bye bye")
 }

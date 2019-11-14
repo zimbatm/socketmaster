@@ -46,7 +46,7 @@ func (a *grpcAPP) ShutdownFunc(timeout time.Duration) func() {
 	}
 }
 
-func ServeHTTP(server *http.Server, address string, timeout time.Duration) error {
+func ListenAndServeHTTP(server *http.Server, address string, timeout time.Duration) error {
 	server.Addr = address
 
 	app := &httpAPP{server: server}
@@ -62,7 +62,7 @@ func ServeHTTP(server *http.Server, address string, timeout time.Duration) error
 	return app.server.Serve(l)
 }
 
-func ServeGRPC(server *grpc.Server, address string, timeout time.Duration) error {
+func ListenAndServeGRPC(server *grpc.Server, address string, timeout time.Duration) error {
 	app := &grpcAPP{server: server}
 
 	l, err := Listen(address)
