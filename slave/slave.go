@@ -12,30 +12,36 @@ import (
 	"google.golang.org/grpc"
 )
 
-type httpAPP struct {
-	server *http.Server
-}
+func ListenAndServeHTTP(server *http.Server, address string, timeout time.Duration) error {
+	l, err := Listen(address)
+	if err != nil {
+		return err
+	}
 
-func (a *httpAPP) ShutdownFunc(timeout time.Duration) func() {
-	return func() {
+	signalHandler(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		a.server.Shutdown(ctx)
+		server.Shutdown(ctx)
+	})
+
+	// Start serving.
+	server.Addr = address
+	return server.Serve(l)
+}
+
+func ListenAndServeGRPC(server *grpc.Server, address string, timeout time.Duration) error {
+	l, err := Listen(address)
+	if err != nil {
+		return err
 	}
-}
 
-type grpcAPP struct {
-	server *grpc.Server
-}
-
-func (a *grpcAPP) ShutdownFunc(timeout time.Duration) func() {
-	return func() {
+	signalHandler(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		stopped := make(chan struct{})
 		go func() {
-			a.server.GracefulStop()
+			server.GracefulStop()
 			close(stopped)
 		}()
 
@@ -43,47 +49,20 @@ func (a *grpcAPP) ShutdownFunc(timeout time.Duration) func() {
 		case <-ctx.Done():
 		case <-stopped:
 		}
-	}
-}
-
-func ListenAndServeHTTP(server *http.Server, address string, timeout time.Duration) error {
-	server.Addr = address
-
-	app := &httpAPP{server: server}
-
-	l, err := Listen(server.Addr)
-	if err != nil {
-		return err
-	}
-
-	signalHandler(app.ShutdownFunc(timeout))
+	})
 
 	// Start serving.
-	return app.server.Serve(l)
+	return server.Serve(l)
 }
 
-func ListenAndServeGRPC(server *grpc.Server, address string, timeout time.Duration) error {
-	app := &grpcAPP{server: server}
-
-	l, err := Listen(address)
-	if err != nil {
-		return err
-	}
-
-	signalHandler(app.ShutdownFunc(timeout))
-
-	// Start serving.
-	return app.server.Serve(l)
-}
-
-func signalHandler(shutdownFn func()) {
+func signalHandler(callbackFn func()) {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
 
 	go func() {
 		<-c
 		log.Println("Shutting down gracefully the server")
-		shutdownFn()
+		callbackFn()
 		log.Println("The server did shut down")
 	}()
 }
