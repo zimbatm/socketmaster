@@ -39,7 +39,7 @@ func Test_logOutput(t *testing.T) {
 		}(&waitForWrite)
 
 		var wg sync.WaitGroup
-		logOutput(ioReader, 1, wg)
+		logOutput(ioReader, 1, &wg)
 
 		wg.Wait()
 		got := stdErr.String()
