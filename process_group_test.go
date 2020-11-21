@@ -24,18 +24,19 @@ func Test_logOutput(t *testing.T) {
 		waitForWrite.Add(1)
 
 		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
 			for _, input := range inputs {
 				_, err = ioWriter.WriteString(input + "\n")
 				if err != nil {
-					t.Fatal("unexpected error", err)
+					t.Error("unexpected error", err)
+					return
 				}
 				time.Sleep(5 * time.Millisecond)
 			}
 			err = ioWriter.Close()
 			if err != nil {
-				t.Fatal("unexpected error", err)
+				t.Error("unexpected error", err)
 			}
-			wg.Done()
 		}(&waitForWrite)
 
 		var wg sync.WaitGroup
