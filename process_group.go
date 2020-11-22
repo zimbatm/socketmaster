@@ -71,7 +71,7 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	self.set.Add(process)
 
 	// Prefix stdout and stderr lines with the [pid] and send it to the log
-	logOutput(ioReader, process.Pid, self.wg)
+	logOutput(ioReader, process.Pid, &self.wg)
 
 	// Handle the process death
 	go func() {
@@ -137,7 +137,7 @@ func (self *processSet) Len() int {
 	return len(self.set)
 }
 
-func logOutput(input *os.File, pid int, wg sync.WaitGroup) {
+func logOutput(input *os.File, pid int, wg *sync.WaitGroup) {
 	wg.Add(1)
 
 	go func() {
