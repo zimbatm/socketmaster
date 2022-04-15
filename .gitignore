@@ -1,3 +1,7 @@
 /socketmaster
 /examples/childserver/childserver
 /.vagrant
+
+# Nix
+result
+result-*
