@@ -10,7 +10,17 @@
       inherit (nixpkgs) lib;
 
       flakeAttrs = {
-        nixosModules.default = { imports = [ ./nix/nixos/module.nix ]; };
+        nixosModules.default = { lib, pkgs, ... }:
+          let
+            inherit (pkgs.stdenv.hostPlatform) system;
+          in
+          {
+            imports = [ ./nix/nixos/module.nix ];
+            config = {
+              socketmaster.package =
+                lib.mkDefault self.packages.${system}.default;
+            };
+          };
       };
 
       perSystem = system:
@@ -33,7 +43,7 @@
           checks =
             lib.optionalAttrs pkgs.stdenv.isLinux {
               nixos = pkgs.callPackage ./nix/nixos/test.nix {
-                socketmaster = self.packages.${system}.default;
+                extraModules = [ self.nixosModules.default ];
               };
             };
         };
