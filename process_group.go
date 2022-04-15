@@ -42,7 +42,18 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		return nil, err
 	}
 
-	env := append(os.Environ(), "EINHORN_FDS=3")
+	// Make sure parent values don't interfere with our child.
+	// All fds have already been consumed at this stage.
+	os.Unsetenv("EINHORN_FDS")
+	os.Unsetenv("LISTEN_FDS")
+	os.Unsetenv("LISTEN_FDNAMES")
+	os.Unsetenv("LISTEN_PID")
+
+	env := append(os.Environ(),
+		"EINHORN_FDS=3",
+		"LISTEN_FDS=1",
+		"LISTEN_FDNAMES=socket",
+	)
 
 	procAttr := &os.ProcAttr{
 		Env:   env,
@@ -60,9 +71,10 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		}
 	}
 
-	args := append([]string{self.commandPath}, flag.Args()...)
-	log.Println("Starting", self.commandPath, args)
-	process, err = os.StartProcess(self.commandPath, args, procAttr)
+	args := append([]string{LISTEN_PID_HELPER_ARGV0}, self.commandPath)
+	args = append(args, flag.Args()...)
+	log.Println("Starting", args[1:])
+	process, err = os.StartProcess(os.Args[0], args, procAttr)
 	if err != nil {
 		return
 	}

@@ -46,7 +46,31 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 	}
 }
 
+// Go won't let us set LISTEN_PID between fork,
+// and exec because letting "language users" do
+// that is not necessarily safe, because of rts
+// issues. Very understandable, but a little   annoying.
+//
+// So, instead we call ourselves with a special
+// argv[0] that drops us into this little helper.
+// That way we don't have to squeeze it between
+// those syscalls, at the cost of an extra exec.
+// These aren't hot execs, so performance is not
+// really affected.
+func setLISTEN_PIDHelper() {
+	os.Setenv("LISTEN_PID", fmt.Sprint(os.Getpid()))
+	args := os.Args[1:]
+	syscall.Exec(args[0], args, os.Environ())
+}
+
+// See setLISTEN_PIDHelper
+var LISTEN_PID_HELPER_ARGV0 = "set-LISTEN_PID-helper"
+
 func main() {
+	if os.Args[0] == LISTEN_PID_HELPER_ARGV0 {
+		setLISTEN_PIDHelper()
+	}
+
 	var (
 		addr      string
 		command   string
