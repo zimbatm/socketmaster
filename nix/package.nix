@@ -2,7 +2,15 @@
 
 buildGoModule {
   name = "socketmaster";
-  src = ../.; # FIXME cleanSource
+  src = lib.cleanSourceWith {
+    src = lib.cleanSource ../.;
+    filter = path: type:
+      baseNameOf path != "nix" && (
+        lib.hasSuffix ".go" path
+        || lib.hasSuffix "/go.mod" path
+        || lib.hasSuffix "/go.sum" path
+      );
+  };
 
   vendorSha256 = "sha256-bPIzk+g8lxntEREAp1ZJiHTGxXFRybtZjhR23uGIFR4=";
 
