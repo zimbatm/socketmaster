@@ -19,6 +19,22 @@ func Test_Config_Empty(t *testing.T) {
 	}
 }
 
+// func Test_Config_Marshal(t *testing.T) {
+// 	var config Config
+// 	config.Command = "hi"
+// 	config.Environment = make(map[string]string)
+// 	config.Environment["greeting"] = "hello"
+
+// 	out, err := yaml.Marshal(config)
+
+// 	if err != nil {
+// 		t.Fatal("unexpected error", err)
+// 	}
+
+// 	fmt.Println(string(out))
+// 	t.Fatal("???")
+// }
+
 func Test_Config_Command(t *testing.T) {
 	var config Config
 	err := yaml.Unmarshal([]byte(`command: hi`), &config)
