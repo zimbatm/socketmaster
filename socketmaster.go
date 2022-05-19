@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"log/syslog"
@@ -71,21 +70,22 @@ func main() {
 		setLISTEN_PIDHelper()
 	}
 
-	var (
-		addr      string
-		command   string
-		err       error
-		startTime int
-		useSyslog bool
-		username  string
-	)
+	inputs, err := ParseInputs(os.Args[1:])
+	if err != nil {
+		log.Fatalf("Options not valid: %s\n", err)
+	}
 
-	flag.StringVar(&command, "command", "", "Program to start")
-	flag.StringVar(&addr, "listen", "tcp://:8080", "Port on which to bind")
-	flag.IntVar(&startTime, "start", 3000, "How long the new process takes to boot in millis")
-	flag.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
-	flag.StringVar(&username, "user", "", "run the command as this user")
-	flag.Parse()
+	var config *Config
+	config, err = inputs.LoadConfig()
+	if err != nil {
+		log.Fatalf("Could not load config file: %s\n", err)
+	}
+
+	useSyslog := inputs.useSyslog
+	command := config.Command
+	addr := inputs.addr
+	username := inputs.username
+	startTime := inputs.startTime
 
 	if useSyslog {
 		stream, err := syslog.New(syslog.LOG_INFO, PROGRAM_NAME)

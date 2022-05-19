@@ -9,10 +9,11 @@ buildGoModule {
         lib.hasSuffix ".go" path
         || lib.hasSuffix "/go.mod" path
         || lib.hasSuffix "/go.sum" path
+        || lib.hasPrefix (toString ../testdata) (toString path)
       );
   };
 
-  vendorSha256 = "sha256-bPIzk+g8lxntEREAp1ZJiHTGxXFRybtZjhR23uGIFR4=";
+  vendorSha256 = "sha256-dlDSa6UT3c/sLzPYgWnBt4PINk7JhTlC6ZFMKXBkUGw=";
 
   meta = with lib; {
     description = "Restart services without losing connections";

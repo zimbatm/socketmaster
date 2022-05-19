@@ -2,7 +2,10 @@ module github.com/zimbatm/socketmaster
 
 go 1.17
 
-require google.golang.org/grpc v1.45.0
+require (
+	google.golang.org/grpc v1.45.0
+	gopkg.in/yaml.v3 v3.0.0-20220512140231-539c8e751b99
+)
 
 require (
 	github.com/golang/protobuf v1.5.2 // indirect
