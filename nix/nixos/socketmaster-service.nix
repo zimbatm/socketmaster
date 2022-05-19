@@ -29,6 +29,8 @@ let
     };
   };
 
+  configFile = format.generate "socketmaster-service-${name}.yaml" config.settings;
+
 in
 {
   options = {
@@ -61,15 +63,19 @@ in
 
   config = {
     systemdServiceModule = { ... }: {
-      # Avoid automatic restarts. This will trigger a reload instead.
-      reloadIfChanged = true;
+      # Avoid automatic restarts.
+      stopIfChanged = false;
+      restartIfChanged = false;
+      # Reload when the config changes.
+      reloadTriggers = [ configFile ];
+      reload = "kill -HUP $MAINPID";
       serviceConfig.ExecStart = [
         "${systemConfig.socketmaster.package}/bin/socketmaster -config-file ${lib.escapeShellArg etcPath} -start ${toString config.startMillis} -listen fd://3"
       ];
     };
     environmentConfig = {
       etc."${etcSubPath}" = {
-        source = format.generate "socketmaster-service-${name}.yaml" config.settings;
+        source = configFile;
       };
     };
   };
