@@ -2,8 +2,10 @@
 let
   inherit (lib)
     mapAttrs
+    attrValues
     mkIf
     mkOption
+    mkMerge
     types
     ;
   inherit (lib.types)
@@ -37,11 +39,13 @@ in
       type = attrsOf (submoduleWith {
         modules = [ ./socketmaster-service.nix ];
         specialArgs.systemConfig = config;
+        specialArgs.pkgs = pkgs;
       });
       default = { };
     };
   };
   config = mkIf (cfg.services != { }) {
     systemd.services = mapAttrs (k: v: v.systemdServiceModule) cfg.services;
+    environment = mkMerge (attrValues (mapAttrs (k: v: v.environmentConfig) cfg.services));
   };
 }

@@ -24,7 +24,7 @@ nixosTest {
       };
 
       socketmaster.services.socket-server = {
-        command = "${socket-server}/bin/socket-server";
+        settings.command = "${socket-server}/bin/socket-server";
       };
     };
   };
