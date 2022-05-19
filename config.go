@@ -18,12 +18,14 @@ import (
 
 // The mutable configuration items
 type Config struct {
-	Command string `yaml:"command"`
+	Command     string            `yaml:"command"`
+	Environment map[string]string `yaml:"environment"`
 }
 
 func emptyConfig() Config {
 	return Config{
-		Command: "",
+		Command:     "",
+		Environment: make(map[string]string),
 	}
 }
 
@@ -56,6 +58,15 @@ func (config *Config) Merge(other Config) error {
 			config.Command = other.Command
 		} else {
 			return errors.New("command can only be set once.")
+		}
+	}
+
+	if len(other.Environment) != 0 {
+		if len(config.Environment) == 0 {
+			config.Environment = other.Environment
+		} else {
+			// Can't be set via args, so impossible
+			return errors.New("environment can only be set once.")
 		}
 	}
 

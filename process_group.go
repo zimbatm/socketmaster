@@ -45,6 +45,11 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		return nil, err
 	}
 
+	config, err := self.inputs.LoadConfig()
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Could not load config '%s'", err))
+	}
+
 	// Make sure parent values don't interfere with our child.
 	// All fds have already been consumed at this stage.
 	os.Unsetenv("LISTEN_PID")
@@ -54,6 +59,10 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	envMap["EINHORN_FDS"] = "3"
 	envMap["LISTEN_FDS"] = "1"
 	envMap["LISTEN_FDNAMES"] = "socket"
+
+	for key, value := range config.Environment {
+		envMap[key] = value
+	}
 
 	env := MapToEnvironment(envMap)
 
@@ -74,10 +83,6 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 	}
 
 	var commandPath string
-	config, err := self.inputs.LoadConfig()
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Could not load config '%s'", err))
-	}
 
 	commandPath, err = exec.LookPath(config.Command)
 	if err != nil {
