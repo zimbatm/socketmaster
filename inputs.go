@@ -22,7 +22,7 @@ func ParseInputs(args []string) (*Inputs, error) {
 	flags := flag.NewFlagSet("socketmaster", flag.ExitOnError)
 
 	inputs.commandlineConfig.LinkToFlagSet(flags)
-	flags.StringVar(&inputs.configFile, "config-file", "", "Configuration file to load and watch")
+	flags.StringVar(&inputs.configFile, "config-file", "", "Configuration file to load on start and reload")
 	flags.StringVar(&inputs.addr, "listen", "tcp://:8080", "Port on which to bind")
 	flags.IntVar(&inputs.startTime, "start", 3000, "How long the new process takes to boot in millis")
 	flags.BoolVar(&inputs.useSyslog, "syslog", false, "Log to syslog")
