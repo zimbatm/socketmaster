@@ -5,7 +5,6 @@ import (
 	"log"
 	"log/syslog"
 	"os"
-	"os/exec"
 	"os/signal"
 	"os/user"
 	"syscall"
@@ -105,11 +104,6 @@ func main() {
 		log.Fatalln("Command path is mandatory")
 	}
 
-	commandPath, err := exec.LookPath(command)
-	if err != nil {
-		log.Fatalln("Could not find executable", err)
-	}
-
 	log.Println("Listening on", addr)
 	sockfile, err := ListenFile(addr)
 	if err != nil {
@@ -125,7 +119,7 @@ func main() {
 	}
 
 	// Run the first process
-	processGroup := MakeProcessGroup(commandPath, sockfile, targetUser)
+	processGroup := MakeProcessGroup(*inputs, sockfile, targetUser)
 	_, err = processGroup.StartProcess()
 	if err != nil {
 		log.Fatalln("Could not start process", err)

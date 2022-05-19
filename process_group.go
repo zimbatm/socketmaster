@@ -2,9 +2,12 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/user"
 	"strconv"
 	"sync"
@@ -15,9 +18,9 @@ type ProcessGroup struct {
 	set *processSet
 	wg  sync.WaitGroup
 
-	commandPath string
-	sockfile    *os.File
-	user        *user.User
+	inputs   Inputs
+	sockfile *os.File
+	user     *user.User
 }
 
 type processSet struct {
@@ -25,12 +28,12 @@ type processSet struct {
 	set map[*os.Process]bool
 }
 
-func MakeProcessGroup(commandPath string, sockfile *os.File, u *user.User) *ProcessGroup {
+func MakeProcessGroup(inputs Inputs, sockfile *os.File, u *user.User) *ProcessGroup {
 	return &ProcessGroup{
-		set:         newProcessSet(),
-		commandPath: commandPath,
-		sockfile:    sockfile,
-		user:        u,
+		set:      newProcessSet(),
+		inputs:   inputs,
+		sockfile: sockfile,
+		user:     u,
 	}
 }
 
@@ -71,7 +74,18 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 		}
 	}
 
-	args := append([]string{LISTEN_PID_HELPER_ARGV0}, self.commandPath)
+	var commandPath string
+	config, err := self.inputs.LoadConfig()
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Could not load config '%s'", err))
+	}
+
+	commandPath, err = exec.LookPath(config.Command)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Could not find executable '%s'", err))
+	}
+
+	args := append([]string{LISTEN_PID_HELPER_ARGV0}, commandPath)
 	args = append(args, flag.Args()...)
 	log.Println("Starting", args[1:])
 	process, err = os.StartProcess(os.Args[0], args, procAttr)
