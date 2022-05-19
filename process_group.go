@@ -47,16 +47,15 @@ func (self *ProcessGroup) StartProcess() (process *os.Process, err error) {
 
 	// Make sure parent values don't interfere with our child.
 	// All fds have already been consumed at this stage.
-	os.Unsetenv("EINHORN_FDS")
-	os.Unsetenv("LISTEN_FDS")
-	os.Unsetenv("LISTEN_FDNAMES")
 	os.Unsetenv("LISTEN_PID")
 
-	env := append(os.Environ(),
-		"EINHORN_FDS=3",
-		"LISTEN_FDS=1",
-		"LISTEN_FDNAMES=socket",
-	)
+	envMap := EnvironmentToMap(os.Environ())
+
+	envMap["EINHORN_FDS"] = "3"
+	envMap["LISTEN_FDS"] = "1"
+	envMap["LISTEN_FDNAMES"] = "socket"
+
+	env := MapToEnvironment(envMap)
 
 	procAttr := &os.ProcAttr{
 		Env:   env,
