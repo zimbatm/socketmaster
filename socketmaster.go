@@ -23,6 +23,7 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 			socketMasterFdEnvVar := fmt.Sprintf("SOCKETMASTER_FD=%d", sockfile.Fd())
 			syscall.Exec(os.Args[0], os.Args, append(os.Environ(), socketMasterFdEnvVar))
 		case syscall.SIGHUP:
+			oldGeneration := processGroup.generation
 			process, err := processGroup.StartProcess()
 			if err != nil {
 				log.Printf("Could not start new process: %v\n", err)
@@ -32,7 +33,7 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 				}
 
 				if processGroup.set.Len() > 1 {
-					processGroup.SignalAll(syscall.SIGTERM, process)
+					processGroup.SignalAll(syscall.SIGTERM, oldGeneration)
 				} else {
 					log.Println("Failed to kill old process, because there's no one left in the group")
 				}
