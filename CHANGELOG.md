@@ -37,7 +37,7 @@
 ===================
 
   * Prefix output with the [pid]
-  * Set EINHORN_FDS to be eninhorn-compatible
+  * Set EINHORN_FDS to be einhorn-compatible
   * Adding license and changelog
   * Add a note about other related projects
 

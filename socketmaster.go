@@ -1,12 +1,10 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"log/syslog"
 	"os"
-	"os/exec"
 	"os/signal"
 	"os/user"
 	"syscall"
@@ -25,6 +23,7 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 			socketMasterFdEnvVar := fmt.Sprintf("SOCKETMASTER_FD=%d", sockfile.Fd())
 			syscall.Exec(os.Args[0], os.Args, append(os.Environ(), socketMasterFdEnvVar))
 		case syscall.SIGHUP:
+			oldGeneration := processGroup.generation
 			process, err := processGroup.StartProcess()
 			if err != nil {
 				log.Printf("Could not start new process: %v\n", err)
@@ -34,7 +33,7 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 				}
 
 				if processGroup.set.Len() > 1 {
-					processGroup.SignalAll(syscall.SIGTERM, process)
+					processGroup.SignalAll(syscall.SIGTERM, oldGeneration)
 				} else {
 					log.Println("Failed to kill old process, because there's no one left in the group")
 				}
@@ -46,22 +45,47 @@ func handleSignals(processGroup *ProcessGroup, c <-chan os.Signal, startTime int
 	}
 }
 
-func main() {
-	var (
-		addr      string
-		command   string
-		err       error
-		startTime int
-		useSyslog bool
-		username  string
-	)
+// Go won't let us set LISTEN_PID between fork,
+// and exec because letting "language users" do
+// that is not necessarily safe, because of rts
+// issues. Very understandable, but a little   annoying.
+//
+// So, instead we call ourselves with a special
+// argv[0] that drops us into this little helper.
+// That way we don't have to squeeze it between
+// those syscalls, at the cost of an extra exec.
+// These aren't hot execs, so performance is not
+// really affected.
+func setLISTEN_PIDHelper() {
+	os.Setenv("LISTEN_PID", fmt.Sprint(os.Getpid()))
+	args := os.Args[1:]
+	syscall.Exec(args[0], args, os.Environ())
+}
 
-	flag.StringVar(&command, "command", "", "Program to start")
-	flag.StringVar(&addr, "listen", "tcp://:8080", "Port on which to bind")
-	flag.IntVar(&startTime, "start", 3000, "How long the new process takes to boot in millis")
-	flag.BoolVar(&useSyslog, "syslog", false, "Log to syslog")
-	flag.StringVar(&username, "user", "", "run the command as this user")
-	flag.Parse()
+// See setLISTEN_PIDHelper
+var LISTEN_PID_HELPER_ARGV0 = "set-LISTEN_PID-helper"
+
+func main() {
+	if os.Args[0] == LISTEN_PID_HELPER_ARGV0 {
+		setLISTEN_PIDHelper()
+	}
+
+	inputs, err := ParseInputs(os.Args[1:])
+	if err != nil {
+		log.Fatalf("Options not valid: %s\n", err)
+	}
+
+	var config *Config
+	config, err = inputs.LoadConfig()
+	if err != nil {
+		log.Fatalf("Could not load config file: %s\n", err)
+	}
+
+	useSyslog := inputs.useSyslog
+	command := config.Command
+	addr := inputs.addr
+	username := inputs.username
+	startTime := inputs.startTime
 
 	if useSyslog {
 		stream, err := syslog.New(syslog.LOG_INFO, PROGRAM_NAME)
@@ -81,11 +105,6 @@ func main() {
 		log.Fatalln("Command path is mandatory")
 	}
 
-	commandPath, err := exec.LookPath(command)
-	if err != nil {
-		log.Fatalln("Could not find executable", err)
-	}
-
 	log.Println("Listening on", addr)
 	sockfile, err := ListenFile(addr)
 	if err != nil {
@@ -101,7 +120,7 @@ func main() {
 	}
 
 	// Run the first process
-	processGroup := MakeProcessGroup(commandPath, sockfile, targetUser)
+	processGroup := MakeProcessGroup(*inputs, sockfile, targetUser)
 	_, err = processGroup.StartProcess()
 	if err != nil {
 		log.Fatalln("Could not start process", err)
